@@ -1,0 +1,76 @@
+.combo-control input {
+  padding-right: 40px;
+}
+
+.combo-toggle {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-muted);
+  transition: transform 150ms ease;
+}
+
+.combo-toggle:hover {
+  background: var(--surface-muted);
+}
+
+.combo-toggle.is-open {
+  transform: rotate(180deg);
+}
+
+.combo-list {
+  position: fixed;
+  z-index: 200; /* above .modal-backdrop (100) */
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 14px 32px rgba(22, 38, 66, 0.18);
+  animation: combo-in 110ms ease-out;
+}
+
+.combo-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 11px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.combo-option.is-active {
+  background: var(--surface-muted);
+}
+
+.combo-option[aria-selected="true"] {
+  color: var(--primary-strong);
+  font-weight: 500;
+}
+
+.combo-option svg {
+  color: var(--primary);
+}
+
+.combo-empty {
+  padding: 9px 11px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+@keyframes combo-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}

@@ -1,0 +1,252 @@
+.auth-form-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.auth-header p {
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.auth-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.auth-check input {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 1px 0 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.auth-inline-link {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.auth-submit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  height: 46px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--gradient-primary);
+  box-shadow: 0 8px 18px rgba(62, 119, 198, 0.28);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(62, 119, 198, 0.34);
+}
+
+.auth-submit:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.auth-switch {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-switch a {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.auth-switch a:hover {
+  color: var(--primary-strong);
+}
+
+/* ---------- password strength ---------- */
+
+.strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strength-bars {
+  display: grid;
+  grid-template-columns: repeat(3, 28px);
+  gap: 4px;
+}
+
+.strength-bars i {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.strength--1 .strength-bars i:nth-child(-n + 1) {
+  background: var(--red);
+}
+
+.strength--2 .strength-bars i:nth-child(-n + 2) {
+  background: var(--amber);
+}
+
+.strength--3 .strength-bars i {
+  background: var(--green);
+}
+
+/* ---------- forgot password ---------- */
+
+.fp-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fp-steps span {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background 200ms ease;
+}
+
+.fp-steps span.is-done {
+  background: var(--primary);
+}
+
+.fp-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  border-radius: 13px;
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.auth-header p strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.fp-code {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.code-input {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.code-input input {
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--text);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.code-input input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.code-input.is-invalid input {
+  border-color: var(--red);
+}
+
+.fp-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.fp-link:hover:not(:disabled) {
+  color: var(--primary-strong);
+}
+
+.fp-muted {
+  color: var(--text-subtle);
+}
+
+.fp-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fp-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.fp-done-icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  background: #e3f4ea;
+  color: var(--green);
+}
+
+.fp-done h2 {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.fp-done p {
+  margin-bottom: 12px;
+  color: var(--text-muted);
+}
+
+.fp-done .auth-submit {
+  align-self: stretch;
+}

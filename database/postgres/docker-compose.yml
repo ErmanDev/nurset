@@ -1,0 +1,24 @@
+# Local PostgreSQL for development (matches Render's PostgreSQL 16).
+#   pnpm db:up     start   |   pnpm db:down   stop (data is kept in the volume)
+# Port 5433 avoids clashing with a PostgreSQL already installed on 5432.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nurset-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nurset
+      POSTGRES_PASSWORD: nurset_dev
+      POSTGRES_DB: nurset
+    ports:
+      - "5433:5432"
+    volumes:
+      - nurset-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nurset -d nurset"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  nurset-pgdata:
