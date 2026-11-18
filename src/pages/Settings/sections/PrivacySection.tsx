@@ -19,7 +19,7 @@ export default function PrivacySection() {
   const { data: security, reload: reloadSecurity } = useAsync(api.getSecurity);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [exporting, setExporting] = useState(false);
-  const [exportResult, setExportResult] = useState<string | null>(null);
+  const [exportResult, setExportResult] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -28,9 +28,9 @@ export default function PrivacySection() {
     setExporting(true);
     setError(null);
     try {
-      const path = await api.exportData();
-      setExportResult(path);
-      toast.created("Data exported", path);
+      await api.exportData();
+      setExportResult(true);
+      toast.created("Data export ready", "Your browser is downloading NurSet-export.json.");
       await set({ last_export_at: new Date().toISOString().slice(0, 10) });
     } catch (err) {
       setError(String(err));
@@ -78,7 +78,7 @@ export default function PrivacySection() {
         <div>
           <strong>Your data is private to your account</strong>
           <span>
-            Your records are kept separate from other students'. Uploaded files stay on this computer.
+            Your records are kept separate from other students' and stored securely on the NurSet server.
             {lastExport ? ` Last backup: ${lastExport}.` : " Export a backup copy from time to time."}
           </span>
         </div>
@@ -153,18 +153,20 @@ export default function PrivacySection() {
       {exportResult && (
         <Modal
           open
-          onClose={() => setExportResult(null)}
-          title="Export complete"
+          onClose={() => setExportResult(false)}
+          title="Export started"
           width={460}
           footer={
-            <button className="btn btn-primary" onClick={() => setExportResult(null)}>
+            <button className="btn btn-primary" onClick={() => setExportResult(false)}>
               Done
             </button>
           }
         >
-          <p className="st-muted">Your data was saved to:</p>
-          <p className="st-path">{exportResult}</p>
-          <p className="st-muted">Keep it somewhere safe — it contains your personal information.</p>
+          <p className="st-muted">
+            Your browser opened a download of all your NurSet data as a JSON file (usually saved to your Downloads
+            folder). The download link works for 5 minutes.
+          </p>
+          <p className="st-muted">Keep the file somewhere safe — it contains your personal information.</p>
         </Modal>
       )}
 

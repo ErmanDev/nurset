@@ -1,0 +1,13 @@
+# Only server/ and database/postgres/migrations are needed to build the server image.
+.git
+node_modules
+dist
+docs
+public
+src
+src-tauri
+**/target
+**/.env
+**/.env.*
+!**/.env.example
+server/uploads

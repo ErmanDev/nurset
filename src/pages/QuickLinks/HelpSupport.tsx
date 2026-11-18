@@ -21,11 +21,11 @@ const faqs: { q: string; a: string }[] = [
   },
   {
     q: "Where is my data stored?",
-    a: "Your records are kept in NurSet's PostgreSQL database (for now a local one running in Docker on this computer), separate from other students' data. Uploaded files are stored in the NurSet app-data folder on this computer.",
+    a: "Your records and uploaded files are kept on the NurSet server, separate from other students' data, so you see the same information on any computer you sign in to. The app needs an internet connection to load and save.",
   },
   {
     q: "Can I share materials with classmates?",
-    a: "Uploads are saved to your own Learning Hub on this device. Sharing with classmates needs an online service, which isn't available yet.",
+    a: "Uploads are saved to your own Learning Hub on the NurSet server, so they're available on any computer you sign in to.",
   },
 ];
 

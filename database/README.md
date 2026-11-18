@@ -9,9 +9,11 @@ database/postgres/
   .env.example          DATABASE_URL template (copy to .env, git-ignored)
 ```
 
-The desktop app connects to PostgreSQL through its Rust backend (SQLx). It
-reads `DATABASE_URL`, falling back to the local Docker database
-`postgres://nurset:nurset_dev@localhost:5433/nurset`.
+Only the NurSet server (`server/`) connects to PostgreSQL; the desktop app
+talks to the server. The server reads `DATABASE_URL` (falling back to the local
+Docker database `postgres://nurset:nurset_dev@localhost:5433/nurset`) and
+applies pending migrations every time it starts. Uploaded files are stored in
+the `stored_files` table.
 
 ## Accounts
 
@@ -62,18 +64,14 @@ cd src-tauri && cargo test -- --include-ignored
 
 ## Deploying to Render
 
-1. Render Dashboard → **New → PostgreSQL** (PostgreSQL 16, same region you'll use for the API).
-2. Copy the **External Database URL** into `database/postgres/.env` as `DATABASE_URL`.
-3. `pnpm db:migrate` — creates the schema (TLS is used automatically for non-local hosts).
-4. `pnpm db:create-instructor …` for each clinical instructor.
-
-> **Important:** don't ship the desktop app pointed at Render PostgreSQL —
-> the database password would be inside the app. Before release, add an API
-> server (a Render **Web Service**) that owns the database connection (via the
-> **Internal Database URL**) and handles sign-in, and have the app call it.
-> The SQL in `src-tauri/src/commands/` can move into that server largely as-is.
+The Blueprint in `render.yaml` creates the database and the server together
+(see the root README). The server applies the migrations on its first start.
+To create instructor accounts, copy the database's **External Database URL**
+into `database/postgres/.env` as `DATABASE_URL`, then run
+`pnpm db:create-instructor …` (TLS is used automatically for non-local hosts).
 
 ## Changing the schema
 
-Add a new numbered file, e.g. `migrations/0002_add_x.sql`, then `pnpm db:migrate`.
-Never edit a migration that has already been applied.
+Add a new numbered file, e.g. `migrations/0009_add_x.sql`, and list it in
+`server/src/migrate.rs` (a test fails if you forget). Restart the server, or
+run `pnpm db:migrate`. Never edit a migration that has already been applied.

@@ -1,5 +1,5 @@
-// Typed wrappers around the Rust commands registered in src-tauri/src/lib.rs.
-import { invoke } from "@tauri-apps/api/core";
+// Typed wrappers around the NurSet server's commands (server/src/dispatch.rs).
+import { call as invoke, clearToken, deviceName, getToken, openLink, setToken, upload, type FileLink } from "./client";
 import type {
   CiDashboard,
   GroupDetail,
@@ -62,12 +62,32 @@ async function packUpload(file: File, details: object): Promise<Uint8Array> {
 
 export const api = {
   // Accounts & sessions
-  register: (input: RegisterInput) => invoke<Profile>("register", { input }),
-  signIn: (identifier: string, password: string, remember: boolean) =>
-    invoke<Profile>("sign_in", { identifier, password, remember }),
-  signOut: () => invoke<void>("sign_out"),
-  /** The signed-in profile (restoring "Keep me signed in"), or null. */
-  currentSession: () => invoke<Profile | null>("current_session"),
+  register: async (input: RegisterInput) => {
+    const signed = await invoke<{ profile: Profile; token: string }>("register", {
+      input: { ...input, device: await deviceName() },
+    });
+    setToken(signed.token, input.remember);
+    return signed.profile;
+  },
+  signIn: async (identifier: string, password: string, remember: boolean) => {
+    const signed = await invoke<{ profile: Profile; token: string }>("sign_in", {
+      identifier,
+      password,
+      remember,
+      device: await deviceName(),
+    });
+    setToken(signed.token, remember);
+    return signed.profile;
+  },
+  signOut: async () => {
+    try {
+      await invoke<void>("sign_out");
+    } finally {
+      clearToken();
+    }
+  },
+  /** The signed-in profile (from the saved session token), or null. */
+  currentSession: async () => (getToken() ? invoke<Profile | null>("current_session") : null),
   changePassword: (current: string, newPassword: string) =>
     invoke<void>("change_password", { current, newPassword }),
   getSecurity: () => invoke<SecurityOverview>("get_security"),
@@ -99,8 +119,8 @@ export const api = {
   setSettings: (values: Record<string, string>) => invoke<void>("set_settings", { values }),
   updateProfile: (input: ProfileInput) => invoke<Profile>("update_profile", { input }),
   setAvatar: (data: string | null) => invoke<Profile>("set_avatar", { data }),
-  /** Writes a JSON export to Downloads; returns its path. */
-  exportData: () => invoke<string>("export_data"),
+  /** Downloads a JSON copy of all your data (opens in the browser). */
+  exportData: async () => openLink(await invoke<FileLink>("export_data")),
   /** Wipes all local data. `confirm` must be "DELETE". */
   resetAllData: (confirm: string) => invoke<void>("reset_all_data", { confirm }),
   listReceipts: () => invoke<Receipt[]>("list_receipts"),
@@ -120,9 +140,9 @@ export const api = {
     invoke<Requirement>("add_requirement", { input }),
   listDocuments: () => invoke<SubmittedDocument[]>("list_documents"),
   /** Opens the student's own submitted file in its default app. */
-  openDocument: (id: number) => invoke<void>("open_document", { id }),
+  openDocument: async (id: number) => openLink(await invoke<FileLink>("open_document", { id })),
   uploadDocument: async (file: File, details: DocumentUploadDetails) =>
-    invoke<SubmittedDocument>("upload_document", await packUpload(file, details)),
+    upload<SubmittedDocument>("/api/upload/document", await packUpload(file, details)),
 
   listTasks: (date?: string) => invoke<Task[]>("list_tasks", { date }),
   addTask: (input: NewTask) => invoke<Task>("add_task", { input }),
@@ -156,13 +176,13 @@ export const api = {
   // Quick Links
   listMaterials: () => invoke<Material[]>("list_materials"),
   uploadMaterial: async (file: File, details: MaterialDetails) =>
-    invoke<Material>("upload_material", await packUpload(file, details)),
+    upload<Material>("/api/upload/material", await packUpload(file, details)),
   updateMaterial: (id: number, input: MaterialDetails) => invoke<Material>("update_material", { id, input }),
   deleteMaterial: (id: number) => invoke<void>("delete_material", { id }),
   setMaterialBookmark: (id: number, bookmarked: boolean) =>
     invoke<Material>("set_material_bookmark", { id, bookmarked }),
   /** Opens the file in the default app (and logs a study session). */
-  openMaterial: (id: number) => invoke<void>("open_material", { id }),
+  openMaterial: async (id: number) => openLink(await invoke<FileLink>("open_material", { id })),
   getHandbook: () => invoke<Material | null>("get_handbook"),
   listAnnouncements: () => invoke<Announcement[]>("list_announcements"),
   getStudyJourney: () => invoke<StudyJourney>("get_study_journey"),

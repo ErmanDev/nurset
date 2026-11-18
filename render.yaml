@@ -1,0 +1,43 @@
+# Render Blueprint: the NurSet API server and its PostgreSQL database.
+# Render dashboard > New > Blueprint > pick this repository.
+#
+# Plans: `free` web services sleep after 15 minutes without traffic (the next
+# request waits about a minute). Free PostgreSQL databases EXPIRE 30 days after
+# creation and are deleted 14 days later - switch `nurset-db` to a paid plan
+# (e.g. 0.1c-256mb) before real students depend on it.
+
+services:
+  - type: web
+    name: nurset-api
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    plan: free
+    region: singapore
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nurset-db
+          property: connectionString
+      - key: TZ
+        value: Asia/Manila
+      # Google Gemini key for AI Study; Render asks for it when you create the Blueprint.
+      - key: GEMINI_API_KEY
+        sync: false
+      # Optional AI limits (per student per day).
+      - key: AI_DAILY_MESSAGE_LIMIT
+        value: "50"
+      - key: AI_DAILY_QUIZ_LIMIT
+        value: "5"
+      - key: AI_DAILY_FEEDBACK_LIMIT
+        value: "10"
+
+databases:
+  - name: nurset-db
+    plan: free
+    region: singapore
+    databaseName: nurset
+    user: nurset
+    postgresMajorVersion: "16"

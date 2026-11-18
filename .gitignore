@@ -11,3 +11,7 @@ database/postgres/.env
 # local secrets (API keys)
 .env
 .env.local
+
+# server build output and local uploads
+server/target
+server/uploads

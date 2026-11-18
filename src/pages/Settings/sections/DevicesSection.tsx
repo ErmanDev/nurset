@@ -38,7 +38,7 @@ export default function DevicesSection() {
       )}
       <p className="st-note">
         Your records live in your NurSet account, so signing in on another computer shows the same data. Uploaded files
-        stay on the computer they were uploaded from.
+        are stored on the NurSet server too, so they open from any computer.
       </p>
     </div>
   );

@@ -196,7 +196,7 @@ export const PRIVACY: LegalDoc = {
     {
       heading: "4. Where your data is stored",
       body: [
-        "Your account and records are stored in NurSet's database. Uploaded files are currently kept on the computer they were uploaded from; only their details (name, size, status, and reviews) are stored in the database. If we move file storage or hosting to a cloud provider, including one outside the Philippines, we will make sure your data receives protection comparable to the Data Privacy Act and update this policy.",
+        "Your account, records, and uploaded files are stored in NurSet's database on our hosting provider (Render), in its Singapore region. The desktop app connects to it over an encrypted (HTTPS) connection. Where data is processed outside the Philippines, we make sure it receives protection comparable to the Data Privacy Act. If we change hosting providers or regions, we will update this policy.",
       ],
     },
     {

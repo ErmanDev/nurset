@@ -30,7 +30,12 @@ export default function AppLayout() {
   useEffect(() => {
     const onChange = () => void reload();
     window.addEventListener("nurset:profile-changed", onChange);
-    return () => window.removeEventListener("nurset:profile-changed", onChange);
+    // The server ended the session (expired, signed out elsewhere, password changed).
+    window.addEventListener("nurset:signed-out", onChange);
+    return () => {
+      window.removeEventListener("nurset:profile-changed", onChange);
+      window.removeEventListener("nurset:signed-out", onChange);
+    };
   }, [reload]);
 
   if (loading || (profile && prefsFor !== profile.id)) return <div className="app-shell" aria-busy="true" />;
