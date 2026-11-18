@@ -25,7 +25,7 @@ function SidebarLink({ item, locked = false }: { item: NavItem; locked?: boolean
   );
 }
 
-export default function Sidebar({ profile }: { profile: Profile | null }) {
+export default function Sidebar({ profile, open = false }: { profile: Profile | null; open?: boolean }) {
   const navigate = useNavigate();
   const { reload: reloadPreferences } = usePreferences();
   const { premium } = usePremium();
@@ -40,7 +40,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? " is-open" : ""}`} aria-label="Navigation">
       <div className="sidebar-logo">
         <Logo />
       </div>

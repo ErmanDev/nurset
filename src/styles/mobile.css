@@ -1,0 +1,266 @@
+/* Phones, tablets, and narrow windows. Loaded after every page stylesheet
+   (see main.tsx), so these rules win over the desktop layouts. */
+
+/* ---------- navigation drawer (<= 900px) ---------- */
+
+.app-nav-backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --page-padding: 16px;
+  }
+
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 200;
+    width: min(280px, 84vw);
+    transform: translateX(-100%);
+    transition: transform 200ms ease;
+    box-shadow: none;
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+    box-shadow: 0 0 40px rgba(22, 38, 66, 0.25);
+  }
+
+  .app-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: block;
+    background: rgba(15, 23, 42, 0.45);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms ease;
+  }
+
+  .nav-open .app-nav-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Two big columns -> one. */
+  .dashboard-grid,
+  .ai-hub-cards,
+  .qz-grid,
+  .quizlab-grid,
+  .prep-grid,
+  .ci-grid,
+  .pg-grid,
+  .ql-two-col,
+  .lh-grid,
+  .st-grid,
+  .st-notif-grid,
+  .pm-checkout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Settings: the section list becomes a horizontal strip above the content. */
+  .st-side {
+    min-width: 0;
+  }
+
+  .st-nav {
+    flex-direction: row !important;
+    overflow-x: auto;
+    gap: 6px;
+  }
+
+  .st-nav-title,
+  .st-promo {
+    display: none !important;
+  }
+
+  .st-nav-link {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  /* Tables and wide rows scroll sideways inside their card. */
+  .ci-table,
+  .ci-shift,
+  .ci-list,
+  .ci-panel {
+    overflow-x: auto;
+  }
+
+  .ci-tr,
+  .ci-att-row,
+  .ci-eval-row {
+    min-width: 640px;
+  }
+}
+
+/* ---------- phones (<= 640px) ---------- */
+
+@media (max-width: 640px) {
+  /* Everything that sits side by side stacks. */
+  .next-duty-details,
+  .qz-figure-row,
+  .auth-row,
+  .auth-row--even,
+  .ci-details-grid,
+  .dashboard-mini-grid,
+  .ai-inputs,
+  .prep-banner-details,
+  .duty-grid,
+  .events-grid,
+  .ci-group-grid,
+  .ci-pinned-grid,
+  .pg-study-grid,
+  .ql-features,
+  .lh-cards,
+  .hb-topics,
+  .review-stats,
+  .st-themes,
+  .st-appearance-grid,
+  .st-info-grid,
+  .st-features,
+  .st-plans,
+  .pm-plans,
+  .form-row-2,
+  .form-row-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Stat tiles: two per row. */
+  .ci-stats,
+  .ci-summary,
+  .pg-cats,
+  .tasks-stats,
+  .summary-grid,
+  .quizlab-types,
+  .ai-actions,
+  .pm-methods {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Page and card headers: let buttons drop below the title. */
+  [class*="-head"],
+  [class*="-header"],
+  [class*="-toolbar"] {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+  }
+
+  /* Search boxes take the full width. */
+  .st-search,
+  .ci-search,
+  .ql-search,
+  .lh-search {
+    width: 100%;
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  /* iOS zooms into inputs smaller than 16px; avoid that. */
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  /* Pop-up windows use the full width. */
+  .modal-backdrop {
+    padding: 12px !important;
+  }
+
+  .modal {
+    max-height: calc(100dvh - 24px);
+  }
+
+  /* Sign-in: the brand panel becomes a slim header. */
+  .auth-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+  }
+
+  .auth-hero {
+    padding: 18px 20px !important;
+  }
+
+  .auth-hero-body,
+  .auth-hero-foot {
+    display: none !important;
+  }
+
+  .auth-main {
+    padding: 24px 16px;
+  }
+
+  /* Settings > Account: photo, then name and email, then the buttons. */
+  .st-profile-card {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .st-profile-text {
+    flex: 1 1 calc(100% - 100px);
+    overflow-wrap: anywhere;
+  }
+
+  .st-profile-actions {
+    flex: 1 1 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  /* Duty Day: arrows and date on one line, the date picker below. */
+  .ci-daybar {
+    flex-wrap: wrap;
+  }
+
+  .ci-daybar-label {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ci-date-input {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  /* Progress overview: text on top, ring below. */
+  .pg-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding: 22px 20px;
+  }
+
+    /* Notification panel and toasts fit the screen. */
+  .nb-panel {
+    position: fixed;
+    top: 60px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: none;
+  }
+
+  .toaster {
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    align-items: stretch;
+  }
+
+  .toast {
+    width: auto;
+  }
+}

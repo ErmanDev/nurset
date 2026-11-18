@@ -6,6 +6,8 @@ import "@fontsource/poppins/600.css";
 import "@fontsource/poppins/700.css";
 import "./styles/global.css";
 import App from "./App";
+// Last, so phone layouts override the page stylesheets App pulls in.
+import "./styles/mobile.css";
 
 // Native file drop is disabled (tauri.conf.json: dragDropEnabled=false) so the
 // webview gets HTML5 drop events. Swallow drops outside drop zones so a stray

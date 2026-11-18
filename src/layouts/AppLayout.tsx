@@ -14,6 +14,16 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const userId = profile?.id;
 
+  // Phones and narrow windows: the sidebar is a drawer opened from the top bar.
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => setNavOpen(false), [pathname]);
+  useEffect(() => {
+    if (!navOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setNavOpen(false);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
+
   // Load the signed-in account's settings (theme, Premium status, ...) before
   // showing pages, so Premium pages and the theme don't flash the defaults.
   const [prefsFor, setPrefsFor] = useState<number | null>(null);
@@ -62,10 +72,11 @@ export default function AppLayout() {
   if (!isCi && onCiPage) return <Navigate to="/" replace />;
 
   return (
-    <div className="app-shell">
-      <Sidebar profile={profile} />
+    <div className={`app-shell${navOpen ? " nav-open" : ""}`}>
+      <Sidebar profile={profile} open={navOpen} />
+      <div className="app-nav-backdrop" onClick={() => setNavOpen(false)} aria-hidden="true" />
       <main className="app-main">
-        <TopBar profile={profile} />
+        <TopBar profile={profile} onMenu={() => setNavOpen(true)} />
         <div className="app-content">
           <Outlet />
         </div>

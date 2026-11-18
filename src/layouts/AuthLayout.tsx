@@ -1,5 +1,8 @@
 import { CalendarDays, ClipboardCheck, Sparkles } from "lucide-react";
-import { Outlet } from "react-router";
+import { useEffect } from "react";
+import { Outlet, useNavigate } from "react-router";
+import { api } from "../lib/api";
+import { getToken } from "../lib/client";
 import Logo from "../components/Logo/Logo";
 import WindowControls from "../components/WindowControls/WindowControls";
 import "./AuthLayout.css";
@@ -12,6 +15,25 @@ const highlights = [
 
 /** Split screen for the signed-out pages: brand panel left, form right. */
 export default function AuthLayout() {
+  const navigate = useNavigate();
+
+  // "Keep me signed in": a valid saved session goes straight to the app.
+  useEffect(() => {
+    if (!getToken()) return;
+    let live = true;
+    api
+      .currentSession()
+      .then((profile) => {
+        if (live && profile) navigate(profile.accountType === "clinical_instructor" ? "/ci" : "/", { replace: true });
+      })
+      .catch(() => {
+        /* offline or expired: stay on the sign-in screen */
+      });
+    return () => {
+      live = false;
+    };
+  }, [navigate]);
+
   return (
     <div className="auth-shell">
       <aside className="auth-hero">
