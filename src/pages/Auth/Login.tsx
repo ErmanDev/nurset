@@ -14,7 +14,23 @@ export default function Login() {
   const { reload: reloadPreferences } = usePreferences();
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(true);
+  // Remembers the last choice on this computer (default: on).
+  const [remember, setRemember] = useState(() => {
+    try {
+      return localStorage.getItem("nurset.keepSignedIn") !== "0";
+    } catch {
+      return true;
+    }
+  });
+
+  function changeRemember(value: boolean) {
+    setRemember(value);
+    try {
+      localStorage.setItem("nurset.keepSignedIn", value ? "1" : "0");
+    } catch {
+      /* storage unavailable: the choice just isn't remembered */
+    }
+  }
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,12 +49,13 @@ export default function Login() {
 
     setSubmitting(true);
     try {
-      // TODO(auth): the password isn't verified yet (no sign-in backend).
-      const profile = await api.signIn(identifier);
+      const profile = await api.signIn(identifier, password, remember);
       await reloadPreferences(); // the new account's theme, accent, ...
       navigate(profile.accountType === "clinical_instructor" ? "/ci" : "/", { replace: true });
     } catch (err) {
-      setErrors({ identifier: String(err) });
+      const message = String(err);
+      // Wrong credentials belong under the password; other problems (database down) at the top.
+      setErrors(message.includes("password") ? { password: message } : { identifier: message });
       setSubmitting(false);
     }
   }
@@ -73,15 +90,6 @@ export default function Login() {
           autoComplete="current-password"
           value={password}
           error={errors.password}
-          labelAside={
-            <Link
-              to="/forgot-password"
-              state={{ email: identifier.includes("@") ? identifier.trim() : "" }}
-              className="text-link"
-            >
-              Forgot password?
-            </Link>
-          }
           onChange={(e) => {
             setPassword(e.target.value);
             setErrors((er) => ({ ...er, password: undefined }));
@@ -89,8 +97,15 @@ export default function Login() {
         />
 
         <label className="auth-check">
-          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
-          <span>Keep me signed in</span>
+          <input type="checkbox" checked={remember} onChange={(e) => changeRemember(e.target.checked)} />
+          <span>
+            Keep me signed in
+            <small className="auth-check-hint">
+              {remember
+                ? "Stay signed in on this computer for 30 days, even after closing NurSet."
+                : "You'll be signed out when you close NurSet. Use this on shared computers."}
+            </small>
+          </span>
         </label>
 
         <button type="submit" className="auth-submit" disabled={submitting}>

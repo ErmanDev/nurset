@@ -32,7 +32,7 @@ const faqs: { q: string; a: string }[] = [
 export default function HelpSupport() {
   return (
     <div className="ql">
-      <QlHeader title="Help & Support" subtitle="Answers to common questions about using NurSet" />
+      <QlHeader title="Help & Support" subtitle="Answers to common questions about using NurSet" back="history" />
 
       <div className="ql-two-col">
         <div className="ql-col">

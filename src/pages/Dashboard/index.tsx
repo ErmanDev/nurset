@@ -8,6 +8,7 @@ import DutyBagCard from "./components/DutyBagCard";
 import WeeklyProgressCard from "./components/WeeklyProgressCard";
 import CiReminderCard from "./components/CiReminderCard";
 import AiStudyBanner from "./components/AiStudyBanner";
+import { toast } from "../../components/Toast/Toast";
 import "./Dashboard.css";
 
 export default function Dashboard() {
@@ -30,6 +31,7 @@ export default function Dashboard() {
 
   async function handleAddTask(title: string) {
     await api.addTask({ title, dueDate: todayIso() });
+    toast.created("Task added", `“${title.trim()}” is on today's list.`);
     await reload();
   }
 

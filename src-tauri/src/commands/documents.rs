@@ -5,6 +5,7 @@ use chrono::Local;
 use serde::Deserialize;
 use tauri::ipc::{InvokeBody, Request};
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 
 use super::{optional_text, required_text};
 use crate::db::Db;
@@ -13,7 +14,28 @@ use crate::models::Document;
 
 /// Largest file accepted by `upload_document`.
 const MAX_UPLOAD_BYTES: usize = 25 * 1024 * 1024;
-const ALLOWED_EXTENSIONS: &[&str] = &["pdf", "doc", "docx", "ppt", "pptx", "jpg", "jpeg", "png"];
+/// Requirement documents: PDF, Word (.docx), and JPG/PNG images.
+const ALLOWED_EXTENSIONS: &[&str] = &["pdf", "docx", "jpg", "jpeg", "png"];
+
+/// Opens one of the student's own submitted files with the default app.
+#[tauri::command]
+pub async fn open_document(app: AppHandle, db: State<'_, Db>, id: i64) -> AppResult<()> {
+    let uid = db.user_id().await?;
+    let path: Option<String> = sqlx::query_scalar("SELECT storage_key FROM documents WHERE id = $1 AND user_id = $2")
+        .bind(id)
+        .bind(uid)
+        .fetch_optional(&db.pool)
+        .await?
+        .ok_or_else(|| super::not_found("Document", id))?;
+    let path = path.ok_or_else(|| AppError::new("This submission has no file attached"))?;
+    if !Path::new(&path).exists() {
+        return Err(AppError::new(
+            "The file isn't on this computer. Files are stored on the computer they were uploaded from until the NurSet server is set up.",
+        ));
+    }
+    app.opener().open_path(&path, None::<&str>)?;
+    Ok(())
+}
 
 /// All submitted documents, newest first.
 #[tauri::command]
@@ -58,7 +80,7 @@ pub async fn upload_document(app: AppHandle, db: State<'_, Db>, request: Request
         .map(|e| e.to_ascii_lowercase())
         .unwrap_or_default();
     if !ALLOWED_EXTENSIONS.contains(&extension.as_str()) {
-        return Err(AppError::new("Unsupported file type. Use PDF, DOC, DOCX, PPT, PPTX, JPG, or PNG."));
+        return Err(AppError::new("Unsupported file type. Use PDF, DOCX, JPG, or PNG."));
     }
     if bytes.is_empty() {
         return Err(AppError::new("The selected file is empty"));

@@ -15,7 +15,7 @@ use crate::models::{date, time, ts, Profile};
 const GROUP_COLORS: &[&str] = &["blue", "green", "purple", "amber", "pink", "teal"];
 
 /// The instructor's students (any of their groups). `$1` = instructor id.
-const MY_STUDENTS: &str = "SELECT gm.student_id FROM group_members gm
+pub(crate) const MY_STUDENTS: &str = "SELECT gm.student_id FROM group_members gm
      JOIN clinical_groups g ON g.id = gm.group_id WHERE g.instructor_id = $1";
 
 // ---------- models ----------
@@ -154,7 +154,7 @@ pub struct GroupInput {
 // ---------- helpers ----------
 
 /// The current user's id, if they're a clinical instructor.
-async fn instructor_id(db: &Db) -> AppResult<i64> {
+pub(crate) async fn instructor_id(db: &Db) -> AppResult<i64> {
     let uid = db.user_id().await?;
     let kind: String = sqlx::query_scalar("SELECT account_type FROM users WHERE id = $1")
         .bind(uid)
@@ -465,7 +465,88 @@ pub async fn add_group_member(db: State<'_, Db>, group_id: i64, identifier: Stri
     if added == 0 {
         return Err(AppError::new("That student is already in this group"));
     }
+    // Give the new member the group's upcoming duties and open requirements.
+    sqlx::query(
+        "INSERT INTO duties (user_id, area, hospital, location, duty_date, start_time, end_time,
+                             clinical_instructor, notes, assignment_id)
+         SELECT $2, a.area, a.hospital, a.location, a.duty_date, a.start_time, a.end_time, u.full_name, a.notes, a.id
+         FROM duty_assignments a JOIN users u ON u.id = a.instructor_id
+         WHERE a.group_id = $1 AND a.duty_date >= CURRENT_DATE",
+    )
+    .bind(group_id)
+    .bind(student_id)
+    .execute(&db.pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO requirements (user_id, title, description, due_date, assignment_id)
+         SELECT $2, r.title, r.description, r.due_date, r.id
+         FROM requirement_assignments r WHERE r.group_id = $1 AND r.due_date >= CURRENT_DATE",
+    )
+    .bind(group_id)
+    .bind(student_id)
+    .execute(&db.pool)
+    .await?;
     get_group(db, group_id).await
+}
+
+/// The instructor's display name (stored on the copies they create).
+pub(crate) async fn instructor_name(pool: &PgPool, ci: i64) -> AppResult<String> {
+    Ok(sqlx::query_scalar("SELECT full_name FROM users WHERE id = $1").bind(ci).fetch_one(pool).await?)
+}
+
+/// Errors unless `group_id` belongs to the instructor.
+pub(crate) async fn check_group(pool: &PgPool, ci: i64, group_id: i64) -> AppResult<()> {
+    let ok: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM clinical_groups WHERE id = $1 AND instructor_id = $2)")
+        .bind(group_id)
+        .bind(ci)
+        .fetch_one(pool)
+        .await?;
+    if ok { Ok(()) } else { Err(not_found("Group", group_id)) }
+}
+
+/// Errors unless the student is in one of the instructor's groups.
+pub(crate) async fn check_student(pool: &PgPool, ci: i64, student_id: i64) -> AppResult<()> {
+    let ok: bool = sqlx::query_scalar(&format!("SELECT $2 IN ({MY_STUDENTS})"))
+        .bind(ci)
+        .bind(student_id)
+        .fetch_one(pool)
+        .await?;
+    if ok { Ok(()) } else { Err(not_found("Student", student_id)) }
+}
+
+/// Errors unless the duty belongs to one of the instructor's students.
+pub(crate) async fn check_duty(pool: &PgPool, ci: i64, duty_id: i64) -> AppResult<()> {
+    let ok: bool = sqlx::query_scalar(&format!(
+        "SELECT EXISTS (SELECT 1 FROM duties WHERE id = $2 AND user_id IN ({MY_STUDENTS}))"
+    ))
+    .bind(ci)
+    .bind(duty_id)
+    .fetch_one(pool)
+    .await?;
+    if ok { Ok(()) } else { Err(not_found("Duty", duty_id)) }
+}
+
+/// Students in the instructor's groups (for audience pickers).
+#[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct MyStudent {
+    pub student_id: i64,
+    pub full_name: String,
+    pub group_id: i64,
+    pub group_name: String,
+}
+
+#[tauri::command]
+pub async fn list_my_students(db: State<'_, Db>) -> AppResult<Vec<MyStudent>> {
+    let ci = instructor_id(&db).await?;
+    Ok(sqlx::query_as::<_, MyStudent>(
+        "SELECT DISTINCT ON (u.id) u.id AS student_id, u.full_name, g.id AS group_id, g.name AS group_name
+         FROM group_members gm JOIN clinical_groups g ON g.id = gm.group_id JOIN users u ON u.id = gm.student_id
+         WHERE g.instructor_id = $1 ORDER BY u.id, g.id",
+    )
+    .bind(ci)
+    .fetch_all(&db.pool)
+    .await?)
 }
 
 #[tauri::command]

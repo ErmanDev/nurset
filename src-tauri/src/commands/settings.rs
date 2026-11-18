@@ -18,7 +18,10 @@ use crate::error::{AppError, AppResult};
 use crate::models::{date, ts, Profile};
 
 /// Settings derived from other tables; the frontend can read but not write them.
-const COMPUTED_KEYS: &[&str] = &["premium_plan", "premium_since"];
+/// Appearance settings only Premium accounts can change.
+pub(crate) const PREMIUM_KEYS: &[&str] = &["theme", "accent"];
+
+const COMPUTED_KEYS: &[&str] = &["premium_plan", "premium_since", "premium_access"];
 
 const PAYMENT_METHODS: &[&str] = &["gcash", "maya", "card", "bank", "other"];
 
@@ -50,7 +53,8 @@ const EXPORT_QUERIES: &[(&str, &str)] = &[
 
 #[tauri::command]
 pub async fn get_settings(db: State<'_, Db>) -> AppResult<HashMap<String, String>> {
-    let uid = db.user_id().await?;
+    // Signed out (e.g. on the sign-in screen): use the default appearance.
+    let Some(uid) = db.current_user() else { return Ok(HashMap::new()) };
     let rows: Vec<(String, String)> = sqlx::query_as("SELECT key, value FROM user_settings WHERE user_id = $1")
         .bind(uid)
         .fetch_all(&db.pool)
@@ -68,6 +72,16 @@ pub async fn get_settings(db: State<'_, Db>) -> AppResult<HashMap<String, String
         map.insert("premium_plan".into(), plan);
         map.insert("premium_since".into(), since);
     }
+    if super::is_premium(&db.pool, uid).await? {
+        // Subscribers, and clinical instructors (staff accounts).
+        map.insert("premium_access".into(), "1".into());
+    } else {
+        // Theme and accent are Premium: free accounts get the default look,
+        // including after a subscription is cancelled.
+        for key in PREMIUM_KEYS {
+            map.remove(*key);
+        }
+    }
     Ok(map)
 }
 
@@ -83,6 +97,9 @@ pub async fn set_settings(db: State<'_, Db>, values: HashMap<String, String>) ->
         }
     }
     let uid = db.user_id().await?;
+    if values.keys().any(|k| PREMIUM_KEYS.contains(&k.as_str())) && !super::is_premium(&db.pool, uid).await? {
+        return Err(AppError::new(super::PREMIUM_REQUIRED));
+    }
     let mut tx = db.pool.begin().await?;
     for (key, value) in values {
         sqlx::query(
@@ -238,6 +255,7 @@ pub async fn reset_all_data(app: AppHandle, db: State<'_, Db>, confirm: String) 
     .await?;
     sqlx::query("DELETE FROM users WHERE id = $1").bind(uid).execute(&db.pool).await?;
     db.forget_user();
+    super::auth::clear_saved_token(&app);
 
     let data_dir = app.path().app_data_dir()?;
     for path in files {

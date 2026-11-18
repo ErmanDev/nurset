@@ -43,12 +43,15 @@ pub struct Profile {
     pub avatar_data: Option<String>,
     /// "student" | "clinical_instructor"
     pub account_type: String,
+    /// Students: how many clinical instructors have them in a group. Only
+    /// those instructors can see the documents the student submits.
+    pub instructor_count: i64,
 }
 
 impl Profile {
     pub const SELECT: &'static str = "SELECT u.id, u.full_name, u.display_name, u.role, \
          NULL::text AS avatar_path, u.email::text AS email, u.university, u.student_id, \
-         u.year_level, u.avatar_url AS avatar_data, u.account_type FROM users u";
+         u.year_level, u.avatar_url AS avatar_data, u.account_type,          (SELECT COUNT(DISTINCT g.instructor_id) FROM group_members gm           JOIN clinical_groups g ON g.id = gm.group_id WHERE gm.student_id = u.id) AS instructor_count          FROM users u";
 }
 
 #[derive(Debug, Clone, Serialize, FromRow)]

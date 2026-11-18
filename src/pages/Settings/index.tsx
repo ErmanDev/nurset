@@ -15,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { usePreferences } from "../../lib/preferences";
+import { api } from "../../lib/api";
+import { useAsync } from "../../hooks/useAsync";
 import AppearanceSection from "./sections/AppearanceSection";
 import AccountSection from "./sections/AccountSection";
 import NotificationsSection from "./sections/NotificationsSection";
@@ -45,18 +47,25 @@ const sections: Section[] = [
   { id: "help", label: "Help & Support", icon: CircleHelp, keywords: "faq support contact version", render: () => <HelpSection /> },
 ];
 
+const STUDENT_ONLY = ["subscription", "study"];
+
 export default function Settings() {
   const { section = "appearance" } = useParams();
   const navigate = useNavigate();
   const { get } = usePreferences();
+  const { data: profile } = useAsync(api.getProfile);
   const [query, setQuery] = useState("");
+
+  // Instructors don't get the student-only sections (Premium, study preferences).
+  const isInstructor = profile?.accountType === "clinical_instructor";
+  const available = isInstructor ? sections.filter((s) => !STUDENT_ONLY.includes(s.id)) : sections;
 
   const q = query.trim().toLowerCase();
   const visible = q
-    ? sections.filter((s) => `${s.label} ${s.keywords}`.toLowerCase().includes(q))
-    : sections;
-  const active = sections.find((s) => s.id === section) ?? sections[0];
-  const premium = get("premium_plan");
+    ? available.filter((s) => `${s.label} ${s.keywords}`.toLowerCase().includes(q))
+    : available;
+  const active = available.find((s) => s.id === section) ?? available[0];
+  const premium = get("premium_plan") || isInstructor;
 
   return (
     <div className="st">

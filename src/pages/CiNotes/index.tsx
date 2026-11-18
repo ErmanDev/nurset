@@ -18,6 +18,7 @@ import {
   type DateFilter,
   type NoteTab,
 } from "./notes";
+import { toast } from "../../components/Toast/Toast";
 import "./CiNotes.css";
 
 const tabs: { value: NoteTab; label: string }[] = [
@@ -69,6 +70,7 @@ export default function CiNotes() {
     setViewing((v) => (v?.id === note.id ? { ...v, isPinned: pinnedNow } : v));
     try {
       await api.setCiNotePinned(note.id, pinnedNow);
+      toast.updated(pinnedNow ? "Note pinned" : "Note unpinned", pinnedNow ? "It now shows at the top of your notes." : undefined);
     } catch (err) {
       setActionError(String(err));
       await reload();
@@ -250,6 +252,7 @@ export default function CiNotes() {
         onConfirm={async () => {
           if (!deleting) return;
           await api.deleteCiNote(deleting.id);
+          toast.deleted("Note deleted", `“${deleting.title}” was removed.`);
           setViewing((v) => (v?.id === deleting.id ? null : v));
           setDeleting(null);
           await reload();

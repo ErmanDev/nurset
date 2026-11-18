@@ -463,3 +463,10 @@ html[data-density="compact"] .sidebar-link {
 html[data-density="compact"] .card {
   border-radius: 12px;
 }
+
+/* Hide the WebView2/Edge built-in password reveal and clear buttons;
+   TextField has its own show/hide toggle. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

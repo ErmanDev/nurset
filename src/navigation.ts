@@ -22,6 +22,8 @@ export interface NavItem {
   path: string;
   label: string;
   icon: LucideIcon;
+  /** Needs NurSet Premium (free accounts see a crown and an upgrade screen). */
+  premium?: boolean;
 }
 
 /** Sidebar order. Routes for each path live in App.tsx. */
@@ -31,10 +33,11 @@ export const mainNav: NavItem[] = [
   { path: "/requirements", label: "Requirements", icon: ClipboardList },
   { path: "/tasks", label: "Tasks", icon: Check },
   { path: "/duty-checklist", label: "Duty Checklist", icon: ClipboardCheck },
-  { path: "/ai-study", label: "AI Study", icon: Sparkles },
+  { path: "/ai-study", label: "AI Study", icon: Sparkles, premium: true },
   { path: "/ci-notes", label: "CI Notes", icon: NotebookPen },
   { path: "/progress", label: "Progress", icon: TrendingUp },
-  { path: "/quick-links", label: "Quick Links", icon: Link2 },
+  { path: "/announcements", label: "Announcements", icon: Megaphone },
+  { path: "/quick-links", label: "Quick Links", icon: Link2, premium: true },
 ];
 
 /** Clinical instructor sidebar. */

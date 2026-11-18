@@ -1,4 +1,5 @@
 import { useRef, useState, type FormEvent } from "react";
+import { Camera } from "lucide-react";
 import { api } from "../../../lib/api";
 import { notifyProfileChanged } from "../../../lib/preferences";
 import { useAsync } from "../../../hooks/useAsync";
@@ -7,7 +8,9 @@ import Avatar from "../../../components/Avatar/Avatar";
 import Modal from "../../../components/Modal/Modal";
 import SelectMenu from "../../../components/SelectMenu/SelectMenu";
 import { TextField } from "../../../components/TextField/TextField";
-import { SectionHeader, UnavailableModal } from "./shared";
+import { SectionHeader } from "./shared";
+import { ChangePasswordModal } from "./security";
+import { toast } from "../../../components/Toast/Toast";
 
 const YEAR_LEVELS = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
 
@@ -29,7 +32,7 @@ async function toAvatarDataUrl(file: File): Promise<string> {
 export default function AccountSection() {
   const { data: profile, setData, error } = useAsync(api.getProfile);
   const [editing, setEditing] = useState<"profile" | "email" | null>(null);
-  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
@@ -41,6 +44,7 @@ export default function AccountSection() {
       const updated = await api.setAvatar(await toAvatarDataUrl(file));
       setData(updated);
       notifyProfileChanged();
+      toast.updated("Profile picture updated");
     } catch (err) {
       setMessage(String(err));
     }
@@ -50,18 +54,24 @@ export default function AccountSection() {
     try {
       setData(await api.setAvatar(null));
       notifyProfileChanged();
+      toast.deleted("Profile picture removed");
     } catch (err) {
       setMessage(String(err));
     }
   }
 
+  const isInstructor = profile?.accountType === "clinical_instructor";
   const info: [string, string | null | undefined][] = [
     ["Full name", profile?.fullName],
     ["Email address", profile?.email],
-    ["University", profile?.university],
-    ["Nursing year level", profile?.yearLevel],
-    ["Student ID", profile?.studentId],
-    ["Account type", profile?.role],
+    [isInstructor ? "School / institution" : "University", profile?.university],
+    ...(isInstructor
+      ? []
+      : ([
+          ["Nursing year level", profile?.yearLevel],
+          ["Student ID", profile?.studentId],
+        ] as [string, string | null | undefined][])),
+    ["Account type", isInstructor ? "Clinical Instructor" : profile?.role],
   ];
 
   return (
@@ -70,10 +80,19 @@ export default function AccountSection() {
       {(error || message) && <div className="alert-error">{error ?? message}</div>}
 
       <div className="st-profile-card">
-        <div className="st-profile-avatar">
-          <Avatar profile={profile} size={64} alwaysShow />
-          <span className="st-online" aria-hidden="true" />
-        </div>
+        <button
+          type="button"
+          className="st-profile-avatar"
+          onClick={() => picker.current?.click()}
+          disabled={!profile}
+          title={profile?.avatarData ? "Change profile picture" : "Add a profile picture"}
+          aria-label={profile?.avatarData ? "Change profile picture" : "Add a profile picture"}
+        >
+          <Avatar profile={profile} size={72} alwaysShow />
+          <span className="st-avatar-camera" aria-hidden="true">
+            <Camera size={14} />
+          </span>
+        </button>
         <div className="st-profile-text">
           <strong>{profile?.fullName ?? "Your name"}</strong>
           <span>{profile?.email ?? "No email added"}</span>
@@ -83,7 +102,7 @@ export default function AccountSection() {
         </div>
         <div className="st-profile-actions">
           <button className="btn btn-secondary" onClick={() => picker.current?.click()} disabled={!profile}>
-            Upload Profile Picture
+            {profile?.avatarData ? "Change Picture" : "Upload Profile Picture"}
           </button>
           {profile?.avatarData && (
             <button className="text-link" onClick={removePicture}>
@@ -128,9 +147,9 @@ export default function AccountSection() {
         <div className="st-row">
           <div>
             <strong>Password</strong>
-            <span>Sign-in isn't connected yet</span>
+            <span>Used with your email{profile?.studentId ? " or student ID" : ""} to sign in</span>
           </div>
-          <button className="btn btn-secondary" onClick={() => setUnavailable("Change Password")}>
+          <button className="btn btn-secondary" onClick={() => setChangingPassword(true)}>
             Change Password
           </button>
         </div>
@@ -145,24 +164,6 @@ export default function AccountSection() {
         </div>
       </div>
 
-      <div className="st-block">
-        <h3>Connected accounts</h3>
-        {[
-          { name: "Google", text: "Sign in with your Google account" },
-          { name: "Microsoft", text: "Use your school Microsoft account" },
-        ].map((acc) => (
-          <div key={acc.name} className="st-row">
-            <div>
-              <strong>{acc.name}</strong>
-              <span>{acc.text}</span>
-            </div>
-            <button className="btn btn-secondary" onClick={() => setUnavailable(`Connect ${acc.name}`)}>
-              Connect
-            </button>
-          </div>
-        ))}
-      </div>
-
       {editing && profile !== undefined && (
         <ProfileFormModal
           profile={profile}
@@ -172,10 +173,11 @@ export default function AccountSection() {
             setData(p);
             setEditing(null);
             notifyProfileChanged();
+            toast.updated("Profile updated", "Your account details were saved.");
           }}
         />
       )}
-      {unavailable && <UnavailableModal title={unavailable} onClose={() => setUnavailable(null)} />}
+      {changingPassword && <ChangePasswordModal onClose={() => setChangingPassword(false)} />}
     </div>
   );
 }
@@ -283,11 +285,17 @@ function ProfileFormModal({
           autoFocus={focusEmail}
           onChange={(e) => set("email")(e.target.value)}
         />
-        <TextField label="University" value={values.university} onChange={(e) => set("university")(e.target.value)} />
-        <div className="form-row-2">
-          <SelectMenu label="Nursing year level" options={yearOptions} value={values.yearLevel} onChange={set("yearLevel")} />
-          <TextField label="Student ID" value={values.studentId} onChange={(e) => set("studentId")(e.target.value)} />
-        </div>
+        <TextField
+          label={profile?.accountType === "clinical_instructor" ? "School / institution" : "University"}
+          value={values.university}
+          onChange={(e) => set("university")(e.target.value)}
+        />
+        {profile?.accountType !== "clinical_instructor" && (
+          <div className="form-row-2">
+            <SelectMenu label="Nursing year level" options={yearOptions} value={values.yearLevel} onChange={set("yearLevel")} />
+            <TextField label="Student ID" value={values.studentId} onChange={(e) => set("studentId")(e.target.value)} />
+          </div>
+        )}
       </form>
     </Modal>
   );

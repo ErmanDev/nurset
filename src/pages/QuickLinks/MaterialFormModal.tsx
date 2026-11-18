@@ -7,6 +7,7 @@ import { formatBytes } from "../../components/FileDropzone/FileDropzone";
 import { api } from "../../lib/api";
 import type { Material, MaterialKind } from "../../lib/types";
 import { kindForFile, kindLabels } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 
 interface Props {
   /** New upload… */
@@ -40,7 +41,10 @@ export default function MaterialFormModal({ file, material, onClose, onSaved }: 
     setSaving(true);
     setServerError(null);
     try {
-      onSaved(material ? await api.updateMaterial(material.id, details) : await api.uploadMaterial(file!, details));
+      const saved = material ? await api.updateMaterial(material.id, details) : await api.uploadMaterial(file!, details);
+      if (material) toast.updated("Material updated", `Changes to “${saved.title}” were saved.`);
+      else toast.created("Material uploaded", `“${saved.title}” was added to your Learning Hub.`);
+      onSaved(saved);
     } catch (err) {
       setServerError(String(err));
       setSaving(false);

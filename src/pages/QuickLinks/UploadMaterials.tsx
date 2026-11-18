@@ -8,6 +8,7 @@ import RowMenu from "../../components/RowMenu/RowMenu";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import MaterialFormModal from "./MaterialFormModal";
 import { MATERIAL_ACCEPT, QlHeader, checkMaterialFile, fileDescription } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 import "./QuickLinks.css";
 
 const loadMine = async () => (await api.listMaterials()).filter((m) => m.isMine);
@@ -129,6 +130,7 @@ export default function UploadMaterials() {
         onConfirm={async () => {
           if (!deleting) return;
           await api.deleteMaterial(deleting.id);
+          toast.deleted("Material deleted", `“${deleting.title}” was removed.`);
           setDeleting(null);
           await reload();
         }}

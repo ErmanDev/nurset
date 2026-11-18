@@ -1,4 +1,7 @@
-import { Check, Monitor, Moon, Sun, type LucideIcon } from "lucide-react";
+import { useNavigate } from "react-router";
+import { Check, Lock, Monitor, Moon, Sun, type LucideIcon } from "lucide-react";
+import { usePremium } from "../../../lib/premium";
+import { PremiumBadge } from "../../../components/PremiumGate/PremiumGate";
 import { ACCENTS, usePreferences, type AccentName } from "../../../lib/preferences";
 import { SectionHeader, Segmented } from "./shared";
 
@@ -10,22 +13,39 @@ const themes: { value: string; label: string; icon: LucideIcon }[] = [
 
 export default function AppearanceSection() {
   const { get, set } = usePreferences();
+  const { premium } = usePremium();
+  const navigate = useNavigate();
   const theme = get("theme");
   const accent = get("accent") as AccentName;
+  /** Theme and accent are Premium; free accounts go to the plans page instead. */
+  const upgrade = () => navigate("/settings/premium/plans");
 
   return (
     <div className="st-section">
       <SectionHeader title="Appearance" subtitle="Personalize how NurSet looks and feels across your workspace." />
 
       <div className="st-block">
-        <h3>Theme</h3>
-        <p className="st-muted">Choose a theme for your NurSet workspace.</p>
-        <div className="st-themes">
+        <h3 className="st-premium-title">
+          Theme {!premium && <PremiumBadge />}
+        </h3>
+        <p className="st-muted">
+          {premium ? (
+            "Choose a theme for your NurSet workspace."
+          ) : (
+            <>
+              Dark mode and system theme come with Premium.{" "}
+              <button className="text-link" onClick={upgrade}>
+                Upgrade
+              </button>
+            </>
+          )}
+        </p>
+        <div className={`st-themes${premium ? "" : " is-locked"}`}>
           {themes.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
               className={`st-theme${theme === value ? " is-active" : ""}`}
-              onClick={() => set({ theme: value })}
+              onClick={() => (premium ? set({ theme: value }) : value !== "light" && upgrade())}
               aria-pressed={theme === value}
             >
               <span className={`st-theme-art st-theme-art--${value}`} aria-hidden="true">
@@ -36,6 +56,7 @@ export default function AppearanceSection() {
               <span className="st-theme-label">
                 <Icon size={14} /> {label}
                 {theme === value && <Check size={14} className="st-theme-check" />}
+                {!premium && value !== "light" && <Lock size={13} className="st-theme-check" />}
               </span>
             </button>
           ))}
@@ -44,9 +65,13 @@ export default function AppearanceSection() {
 
       <div className="st-appearance-grid">
         <div className="st-block">
-          <h3>Accent Color</h3>
-          <p className="st-muted">Used for buttons, highlights, and selected items.</p>
-          <div className="st-swatches" role="radiogroup" aria-label="Accent color">
+          <h3 className="st-premium-title">
+            Accent Color {!premium && <PremiumBadge />}
+          </h3>
+          <p className="st-muted">
+            {premium ? "Used for buttons, highlights, and selected items." : "Change the accent color with Premium."}
+          </p>
+          <div className={`st-swatches${premium ? "" : " is-locked"}`} role="radiogroup" aria-label="Accent color">
             {(Object.keys(ACCENTS) as AccentName[]).map((name) => (
               <button
                 key={name}
@@ -56,7 +81,7 @@ export default function AppearanceSection() {
                 title={ACCENTS[name].label}
                 className={`st-swatch${accent === name ? " is-active" : ""}`}
                 style={{ background: ACCENTS[name].primary }}
-                onClick={() => set({ accent: name })}
+                onClick={() => (premium ? set({ accent: name }) : accent !== name && upgrade())}
               >
                 {accent === name && <Check size={14} strokeWidth={3} />}
               </button>

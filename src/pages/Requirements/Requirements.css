@@ -339,3 +339,37 @@
   line-height: 1.6;
   white-space: pre-wrap;
 }
+
+/* Shown while the student isn't in any clinical instructor's group. */
+.review-notice {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 13px 16px;
+  border: 1px solid var(--note-border);
+  border-radius: var(--radius-md);
+  background: var(--note-bg);
+  color: var(--note-accent);
+}
+
+.review-notice svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.review-notice div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.review-notice strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.review-notice span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}

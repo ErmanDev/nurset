@@ -139,7 +139,7 @@ fn streak(days: &HashSet<NaiveDate>, today: NaiveDate) -> i64 {
 /// Learning Hub library (everything except handbooks), newest first.
 #[tauri::command]
 pub async fn list_materials(db: State<'_, Db>) -> AppResult<Vec<Material>> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     Ok(sqlx::query_as::<_, Material>(&format!(
         "{MATERIAL_SELECT} WHERE m.kind <> 'handbook' AND {VISIBLE} ORDER BY m.created_at DESC, m.id DESC"
     ))
@@ -152,6 +152,7 @@ pub async fn list_materials(db: State<'_, Db>) -> AppResult<Vec<Material>> {
 /// Body format matches `upload_document`; see `documents::split_upload`.
 #[tauri::command]
 pub async fn upload_material(app: AppHandle, db: State<'_, Db>, request: Request<'_>) -> AppResult<Material> {
+    super::require_premium(&db).await?; // Premium only
     let InvokeBody::Raw(body) = request.body() else {
         return Err(AppError::new("Upload must be sent as raw bytes"));
     };
@@ -228,6 +229,7 @@ pub async fn upload_material(app: AppHandle, db: State<'_, Db>, request: Request
 
 #[tauri::command]
 pub async fn update_material(db: State<'_, Db>, id: i64, input: MaterialDetails) -> AppResult<Material> {
+    super::require_premium(&db).await?; // Premium only
     let title = required_text(&input.title, "Title")?;
     check_kind(&input.kind)?;
     let uid = db.user_id().await?;
@@ -252,7 +254,7 @@ pub async fn update_material(db: State<'_, Db>, id: i64, input: MaterialDetails)
 /// Deletes one of your uploads and its stored file.
 #[tauri::command]
 pub async fn delete_material(db: State<'_, Db>, id: i64) -> AppResult<()> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     let deleted: Option<Option<String>> =
         sqlx::query_scalar("DELETE FROM materials WHERE id = $1 AND owner_id = $2 RETURNING storage_key")
             .bind(id)
@@ -272,7 +274,7 @@ pub async fn delete_material(db: State<'_, Db>, id: i64) -> AppResult<()> {
 
 #[tauri::command]
 pub async fn set_material_bookmark(db: State<'_, Db>, id: i64, bookmarked: bool) -> AppResult<Material> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     get_material(&db.pool, uid, id).await?; // must be visible to this user
     if bookmarked {
         sqlx::query("INSERT INTO material_bookmarks (user_id, material_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
@@ -293,7 +295,7 @@ pub async fn set_material_bookmark(db: State<'_, Db>, id: i64, bookmarked: bool)
 /// Opens the material's file in the default app and records a study session.
 #[tauri::command]
 pub async fn open_material(app: AppHandle, db: State<'_, Db>, id: i64) -> AppResult<()> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     let (title, path): (String, Option<String>) =
         sqlx::query_as(&format!("SELECT m.title, m.storage_key FROM materials m WHERE m.id = $2 AND {VISIBLE}"))
             .bind(uid)
@@ -314,7 +316,7 @@ pub async fn open_material(app: AppHandle, db: State<'_, Db>, id: i64) -> AppRes
 
 #[tauri::command]
 pub async fn get_handbook(db: State<'_, Db>) -> AppResult<Option<Material>> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     Ok(sqlx::query_as::<_, Material>(&format!(
         "{MATERIAL_SELECT} WHERE m.owner_id = $1 AND m.kind = 'handbook' LIMIT 1"
     ))
@@ -325,11 +327,21 @@ pub async fn get_handbook(db: State<'_, Db>) -> AppResult<Option<Material>> {
 
 #[tauri::command]
 pub async fn list_announcements(db: State<'_, Db>) -> AppResult<Vec<Announcement>> {
-    db.user_id().await?; // fails clearly if the database isn't reachable
+    let uid = db.user_id().await?;
+    // School-wide posts, plus posts from the student's instructors to their
+    // group (or to all of that instructor's groups).
     Ok(sqlx::query_as::<_, Announcement>(concat!(
         "SELECT a.id, a.category, a.title, a.body, ", date!("a.posted_at"), " AS posted_at
-         FROM announcements a ORDER BY a.posted_at DESC, a.id DESC"
+         FROM announcements a
+         WHERE a.author_id IS NULL
+            OR a.author_id = $1
+            OR a.group_id IN (SELECT group_id FROM group_members WHERE student_id = $1)
+            OR (a.group_id IS NULL AND a.author_id IN (
+                SELECT g.instructor_id FROM group_members gm JOIN clinical_groups g ON g.id = gm.group_id
+                WHERE gm.student_id = $1))
+         ORDER BY a.posted_at DESC, a.id DESC"
     ))
+    .bind(uid)
     .fetch_all(&db.pool)
     .await?)
 }
@@ -338,7 +350,7 @@ pub async fn list_announcements(db: State<'_, Db>) -> AppResult<Vec<Announcement
 /// opened) plus distinct quizzes answered, per day.
 #[tauri::command]
 pub async fn get_study_journey(db: State<'_, Db>) -> AppResult<StudyJourney> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     let today_date = today();
     let sessions_today: i64 = sqlx::query_scalar(
         "SELECT (SELECT COUNT(*) FROM study_activity WHERE user_id = $1 AND created_at::date = $2::date)
@@ -372,7 +384,7 @@ pub async fn get_study_journey(db: State<'_, Db>) -> AppResult<StudyJourney> {
 
 #[tauri::command]
 pub async fn list_quick_links(db: State<'_, Db>) -> AppResult<Vec<QuickLink>> {
-    let uid = db.user_id().await?;
+    let uid = super::require_premium(&db).await?; // Premium only
     Ok(sqlx::query_as::<_, QuickLink>(&format!("{} WHERE q.user_id = $1 ORDER BY q.position", QuickLink::SELECT))
         .bind(uid)
         .fetch_all(&db.pool)

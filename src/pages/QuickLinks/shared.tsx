@@ -1,15 +1,35 @@
 import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { formatBytes } from "../../components/FileDropzone/FileDropzone";
 import type { Material, MaterialKind } from "../../lib/types";
 
-/** "← Title / subtitle" header used by the Quick Links sub-pages. */
-export function QlHeader({ title, subtitle, back = "/quick-links" }: { title: string; subtitle: string; back?: string }) {
+/**
+ * "← Title / subtitle" header used by the Quick Links sub-pages.
+ * `back`: a route, "history" (previous page), or null for no back arrow.
+ */
+export function QlHeader({
+  title,
+  subtitle,
+  back = "/quick-links",
+}: {
+  title: string;
+  subtitle: string;
+  back?: string | null;
+}) {
+  const navigate = useNavigate();
   return (
     <header className="ql-subhead">
-      <Link to={back} className="ql-back" aria-label="Back to Quick Links">
-        <ArrowLeft size={18} />
-      </Link>
+      {back === "history" ? (
+        <button type="button" className="ql-back" aria-label="Back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={18} />
+        </button>
+      ) : (
+        back && (
+          <Link to={back} className="ql-back" aria-label="Back to Quick Links">
+            <ArrowLeft size={18} />
+          </Link>
+        )
+      )}
       <div>
         <h1>{title}</h1>
         <p>{subtitle}</p>

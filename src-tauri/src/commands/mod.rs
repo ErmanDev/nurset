@@ -3,7 +3,13 @@
 pub mod ai_study;
 pub mod auth;
 pub mod checklists;
+pub mod ci_announcements;
+pub mod ci_assignments;
+pub mod ci_duty_day;
+pub mod ci_instructions;
+pub mod ci_reviews;
 pub mod instructor;
+pub mod notifications;
 pub mod ci_notes;
 pub mod dashboard;
 pub mod documents;
@@ -66,4 +72,29 @@ pub(crate) fn valid_time(value: &str, field: &str) -> Result<String, AppError> {
 /// "<thing> <id> not found" error.
 pub(crate) fn not_found(thing: &str, id: i64) -> AppError {
     AppError::new(format!("{thing} {id} not found"))
+}
+
+/// Error shown when a free account calls a Premium command.
+pub(crate) const PREMIUM_REQUIRED: &str =
+    "This is a NurSet Premium feature. Upgrade in Settings › Subscription & Billing to use it.";
+
+/// Whether the user has Premium access: an active subscription, or a clinical
+/// instructor (staff) account.
+pub(crate) async fn is_premium(pool: &sqlx::PgPool, uid: i64) -> Result<bool, AppError> {
+    Ok(sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM subscriptions WHERE user_id = $1 AND status = 'active')
+             OR EXISTS (SELECT 1 FROM users WHERE id = $1 AND account_type = 'clinical_instructor')",
+    )
+        .bind(uid)
+        .fetch_one(pool)
+        .await?)
+}
+
+/// The signed-in user's id, if they have Premium (AI Study, Learning Hub, ...).
+pub(crate) async fn require_premium(db: &crate::db::Db) -> Result<i64, AppError> {
+    let uid = db.user_id().await?;
+    if !is_premium(&db.pool, uid).await? {
+        return Err(AppError::new(PREMIUM_REQUIRED));
+    }
+    Ok(uid)
 }

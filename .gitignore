@@ -7,3 +7,7 @@ src-tauri/gen
 
 # local database credentials
 database/postgres/.env
+
+# local secrets (API keys)
+.env
+.env.local

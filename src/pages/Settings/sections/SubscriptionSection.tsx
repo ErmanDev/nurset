@@ -7,19 +7,10 @@ import { useAsync } from "../../../hooks/useAsync";
 import { formatLongDate, parseDateTime } from "../../../lib/format";
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog";
 import { PLANS, METHOD_LABELS, peso } from "../Premium/plans";
+import { toast } from "../../../components/Toast/Toast";
+import { PREMIUM_FEATURES } from "../../../lib/premium";
 
-const features = [
-  "Unlimited study material uploads",
-  "AI-powered study assistant",
-  "Advanced flashcards",
-  "Unlimited practice quizzes",
-  "Smart study recommendations",
-  "Advanced task management",
-  "Exclusive nursing resources",
-  "Progress analytics",
-  "Ad-free experience",
-  "Priority support",
-];
+const features = PREMIUM_FEATURES;
 
 export default function SubscriptionSection() {
   const navigate = useNavigate();
@@ -148,6 +139,7 @@ export default function SubscriptionSection() {
         onClose={() => setConfirmCancel(false)}
         onConfirm={async () => {
           await api.cancelPremium();
+          toast.deleted("Premium cancelled", "You're back on the Free plan.");
           await reload();
           setConfirmCancel(false);
         }}

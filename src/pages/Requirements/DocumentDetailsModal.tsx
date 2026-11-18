@@ -1,4 +1,6 @@
-import { FileText, MessageSquareText } from "lucide-react";
+import { useState } from "react";
+import { ExternalLink, FileText, MessageSquareText } from "lucide-react";
+import { api } from "../../lib/api";
 import Modal from "../../components/Modal/Modal";
 import { formatAddedAt, formatLongDate } from "../../lib/format";
 import type { SubmittedDocument } from "../../lib/types";
@@ -10,7 +12,22 @@ interface Props {
 }
 
 export default function DocumentDetailsModal({ document: doc, onClose }: Props) {
+  const [opening, setOpening] = useState(false);
+  const [openError, setOpenError] = useState<string | null>(null);
   if (!doc) return null;
+
+  async function openFile() {
+    if (!doc) return;
+    setOpening(true);
+    setOpenError(null);
+    try {
+      await api.openDocument(doc.id);
+    } catch (err) {
+      setOpenError(String(err));
+    } finally {
+      setOpening(false);
+    }
+  }
   const { label, tone } = statusInfo[doc.status];
 
   const rows: [string, string][] = [
@@ -28,12 +45,18 @@ export default function DocumentDetailsModal({ document: doc, onClose }: Props) 
       title="Document Details"
       width={480}
       footer={
-        <button className="btn btn-secondary" onClick={onClose}>
-          Close
-        </button>
+        <>
+          <button className="btn btn-secondary" onClick={onClose}>
+            Close
+          </button>
+          <button className="btn btn-primary" onClick={() => void openFile()} disabled={opening}>
+            <ExternalLink size={15} /> {opening ? "Opening…" : "Open file"}
+          </button>
+        </>
       }
     >
       <div className="details">
+        {openError && <div className="alert-error">{openError}</div>}
         <div className="details-file">
           <span className={`review-doc-icon review-doc-icon--${tone}`}>
             <FileText size={20} />

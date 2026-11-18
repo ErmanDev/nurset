@@ -14,18 +14,19 @@ pnpm app:build    # release build + installer in src-tauri/target/release/bundle
 ```
 
 Requires Docker Desktop: `pnpm app` starts the local PostgreSQL database
-(`pnpm db:up`), applies migrations, then launches the app. Load sample data
-once with `pnpm db:seed`. See `database/README.md`.
+(`pnpm db:up`), applies migrations, then launches the app. Students create an
+account on the Register screen; clinical instructor accounts are created with
+`pnpm db:create-instructor`. See `database/README.md`.
 
 ## Structure
 
 ```
-database/postgres/            PostgreSQL schema, seed, migration runner — see database/README.md
+database/postgres/            PostgreSQL schema, migration runner, account script — see database/README.md
 src/                          React frontend
   App.tsx                     routes
   navigation.ts               sidebar items (path, label, icon)
   layouts/AppLayout.tsx       sidebar + top bar + page outlet
-  components/                 Sidebar, TopBar, Logo, PagePlaceholder
+  components/                 Sidebar, TopBar, Logo, shared form controls
   pages/
     Dashboard/                Home screen (done) + components/
     DutySchedule/ Requirements/ Tasks/ DutyChecklist/

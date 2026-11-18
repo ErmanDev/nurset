@@ -14,6 +14,8 @@ export interface Profile {
   /** Small data:image/... URL. */
   avatarData: string | null;
   accountType: AccountType;
+  /** Students: number of clinical instructors who have them in a group. */
+  instructorCount: number;
 }
 
 export type AccountType = "student" | "clinical_instructor";
@@ -424,4 +426,79 @@ export interface CiDashboard {
   }[];
   deadlines: { title: string; dueDate: string; submitted: number; total: number }[];
   groups: GroupSummary[];
+}
+
+// ---------- accounts & sessions ----------
+
+export interface RegisterInput {
+  firstName: string;
+  middleName: string | null;
+  lastName: string;
+  email: string;
+  password: string;
+  university: string | null;
+  yearLevel: string | null;
+  studentId: string | null;
+  remember: boolean;
+}
+
+export interface SessionInfo {
+  id: number;
+  device: string;
+  createdAt: string;
+  lastSeenAt: string;
+  endedAt: string | null;
+  active: boolean;
+  current: boolean;
+}
+
+export interface SecurityOverview {
+  passwordChangedAt: string | null;
+  sessions: SessionInfo[];
+}
+
+// ---------- notification bell ----------
+
+export type NotificationKind =
+  | "duty"
+  | "requirement"
+  | "review_ok"
+  | "review_fix"
+  | "instruction"
+  | "task"
+  | "announcement"
+  | "material"
+  | "study"
+  | "attendance"
+  | "evaluation";
+
+export interface AppNotification {
+  key: string;
+  category: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  /** App route to open. */
+  link: string;
+  /** "YYYY-MM-DD HH:MM:SS" local time */
+  at: string;
+  read: boolean;
+}
+
+export interface NotificationFeed {
+  /** False when Settings › Notifications › In-app notifications is off. */
+  enabled: boolean;
+  unread: number;
+  items: AppNotification[];
+}
+
+/** Feedback after finishing a quiz. */
+export interface QuizFeedback {
+  /** "ai" = written by NurSet AI, "basic" = built from your answers. */
+  source: "ai" | "basic";
+  summary: string;
+  strengths: string[];
+  reviewTopics: { topic: string; why: string }[];
+  nextSteps: string[];
+  notice: string | null;
 }

@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router";
-import { Bot, ChevronRight, FileText, MessageCircle, Plus, RotateCcw, Send, X } from "lucide-react";
+import { ChevronRight, FileText, MessageCircle, Plus, Send, Trash2, X } from "lucide-react";
 import { api } from "../../../lib/api";
 import { useAsync } from "../../../hooks/useAsync";
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog";
 import { BackLink } from "../shared";
 import AttachMenu, { type AttachKind } from "./AttachMenu";
 import StudyNotesModal from "./StudyNotesModal";
+import { toast } from "../../../components/Toast/Toast";
 import "../AiStudy.css";
+import nurseAvatar from "../../../assets/nurse_chatbot_avatar.jpg";
 import "./Chat.css";
 
 const suggestions = [
@@ -110,8 +112,8 @@ export default function AiChat() {
           <BackLink to="/ai-study" />
         </div>
         {messages && messages.length > 0 && (
-          <button className="btn btn-secondary" onClick={() => setConfirmClear(true)}>
-            <RotateCcw size={14} /> New chat
+          <button className="btn btn-secondary ai-chat-delete" onClick={() => setConfirmClear(true)}>
+            <Trash2 size={14} /> Delete chat
           </button>
         )}
       </header>
@@ -121,9 +123,7 @@ export default function AiChat() {
       <div className="ai-chat-body">
         {empty && (
           <div className="ai-chat-empty">
-            <span className="ai-chat-bot">
-              <Bot size={44} strokeWidth={1.6} />
-            </span>
+            <img className="ai-chat-bot" src={nurseAvatar} alt="NurSet AI nurse assistant" />
             <h2>How can I help you?</h2>
             <p>Ask questions about your nursing lessons</p>
             <div className="ai-chat-suggestions">
@@ -141,9 +141,7 @@ export default function AiChat() {
         {messages?.map((m) => (
           <div key={m.id} className={`ai-msg ai-msg--${m.role}`}>
             {m.role === "assistant" && (
-              <span className="ai-msg-avatar">
-                <Bot size={16} />
-              </span>
+              <img className="ai-msg-avatar" src={nurseAvatar} alt="" aria-hidden="true" />
             )}
             <div className="ai-msg-bubble">
               {m.attachment && (
@@ -157,9 +155,7 @@ export default function AiChat() {
         ))}
         {sending && (
           <div className="ai-msg ai-msg--assistant">
-            <span className="ai-msg-avatar">
-              <Bot size={16} />
-            </span>
+            <img className="ai-msg-avatar" src={nurseAvatar} alt="" aria-hidden="true" />
             <div className="ai-msg-bubble ai-typing">
               <span />
               <span />
@@ -206,6 +202,10 @@ export default function AiChat() {
             <Send size={16} />
           </button>
         </div>
+        <p className="ai-composer-note">
+          NurSet AI can make mistakes; check important facts with your references and CI. Never enter patient names or
+          other identifying details.
+        </p>
       </form>
 
       <input
@@ -245,12 +245,14 @@ export default function AiChat() {
       )}
       <ConfirmDialog
         open={confirmClear}
-        title="Start a new chat?"
-        message="This clears the current conversation."
-        confirmLabel="New chat"
+        title="Delete this chat?"
+        message={`All ${messages?.length ?? 0} messages in this conversation will be permanently deleted and removed from your recent study activity. This can't be undone.`}
+        confirmLabel="Delete chat"
+        danger
         onClose={() => setConfirmClear(false)}
         onConfirm={async () => {
           await api.clearChat();
+          toast.deleted("Chat deleted", "Your conversation was permanently deleted.");
           setData([]);
           setConfirmClear(false);
         }}

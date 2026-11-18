@@ -1,30 +1,36 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, GraduationCap, Lock, Mail, School, User } from "lucide-react";
+import { ArrowRight, GraduationCap, IdCard, Lock, Mail, School, User } from "lucide-react";
 import { SelectField, TextField } from "../../components/TextField/TextField";
 import { isEmail, MIN_PASSWORD_LENGTH, passwordStrength, type FieldErrors } from "./validation";
+import { api } from "../../lib/api";
+import { usePreferences } from "../../lib/preferences";
+import { toast } from "../../components/Toast/Toast";
+import LegalModal, { type LegalKind } from "../Legal/LegalModal";
 import "./Auth.css";
 
-type Field = "fullName" | "email" | "school" | "yearLevel" | "password" | "confirmPassword" | "agree";
+type Field = "firstName" | "middleName" | "lastName" | "email" | "school" | "yearLevel" | "studentId" | "password" | "confirmPassword" | "agree";
 
 const initialValues = {
-  fullName: "",
+  firstName: "",
+  middleName: "",
+  lastName: "",
   email: "",
   school: "",
   yearLevel: "",
+  studentId: "",
   password: "",
   confirmPassword: "",
 };
 
-const yearLevels = [
-  { value: "1", label: "1st Year" },
-  { value: "2", label: "2nd Year" },
-  { value: "3", label: "3rd Year" },
-  { value: "4", label: "4th Year" },
-];
+// Same values as Settings › Account.
+const yearLevels = ["1st Year", "2nd Year", "3rd Year", "4th Year"].map((y) => ({ value: y, label: y }));
 
 export default function Register() {
   const navigate = useNavigate();
+  const { reload: reloadPreferences } = usePreferences();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [legal, setLegal] = useState<LegalKind | null>(null);
   const [values, setValues] = useState(initialValues);
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<Field>>({});
@@ -39,7 +45,8 @@ export default function Register() {
 
   function validate(): FieldErrors<Field> {
     const next: FieldErrors<Field> = {};
-    if (!values.fullName.trim()) next.fullName = "Enter your full name.";
+    if (!values.firstName.trim()) next.firstName = "Enter your first name.";
+    if (!values.lastName.trim()) next.lastName = "Enter your last name.";
     if (!values.email.trim()) next.email = "Enter your email.";
     else if (!isEmail(values.email)) next.email = "Enter a valid email address.";
     if (!values.school.trim()) next.school = "Enter your school.";
@@ -60,9 +67,28 @@ export default function Register() {
     if (Object.keys(next).length > 0) return;
 
     setSubmitting(true);
-    // TODO(auth): replace with a Tauri `register` command (hash password in Rust, save profile).
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    navigate("/", { replace: true });
+    setServerError(null);
+    try {
+      await api.register({
+        firstName: values.firstName,
+        middleName: values.middleName.trim() || null,
+        lastName: values.lastName,
+        email: values.email,
+        password: values.password,
+        university: values.school,
+        yearLevel: values.yearLevel,
+        studentId: values.studentId.trim() || null,
+        remember: true,
+      });
+      await reloadPreferences();
+      toast.created("Account created", `Welcome to NurSet, ${values.firstName.trim()}!`);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const message = String(err);
+      if (message.includes("email")) setErrors({ email: message });
+      else setServerError(message);
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -73,16 +99,36 @@ export default function Register() {
       </header>
 
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
+        {serverError && <div className="alert-error">{serverError}</div>}
         <TextField
-          label="Full name"
+          label="First name"
           icon={User}
-          placeholder="Juan Dela Cruz"
-          autoComplete="name"
+          placeholder="Juan"
+          autoComplete="given-name"
           autoFocus
-          value={values.fullName}
-          error={errors.fullName}
-          onChange={(e) => update("fullName", e.target.value)}
+          value={values.firstName}
+          error={errors.firstName}
+          onChange={(e) => update("firstName", e.target.value)}
         />
+
+        <div className="auth-row auth-row--even">
+          <TextField
+            label="Middle name (optional)"
+            placeholder="Santos"
+            autoComplete="additional-name"
+            value={values.middleName}
+            error={errors.middleName}
+            onChange={(e) => update("middleName", e.target.value)}
+          />
+          <TextField
+            label="Last name"
+            placeholder="Dela Cruz"
+            autoComplete="family-name"
+            value={values.lastName}
+            error={errors.lastName}
+            onChange={(e) => update("lastName", e.target.value)}
+          />
+        </div>
 
         <TextField
           label="Email"
@@ -116,6 +162,16 @@ export default function Register() {
             onChange={(e) => update("yearLevel", e.target.value)}
           />
         </div>
+
+        <TextField
+          label="Student ID (optional)"
+          icon={IdCard}
+          placeholder="e.g. 2021-00123"
+          hint="Lets your clinical instructor add you to their group, and you can sign in with it."
+          value={values.studentId}
+          error={errors.studentId}
+          onChange={(e) => update("studentId", e.target.value)}
+        />
 
         <TextField
           label="Password"
@@ -162,8 +218,14 @@ export default function Register() {
               }}
             />
             <span>
-              I agree to the <span className="auth-inline-link">Terms of Use</span> and{" "}
-              <span className="auth-inline-link">Privacy Policy</span>
+              I agree to the{" "}
+              <button type="button" className="auth-inline-link" onClick={(e) => (e.preventDefault(), setLegal("terms"))}>
+                Terms of Use
+              </button>{" "}
+              and{" "}
+              <button type="button" className="auth-inline-link" onClick={(e) => (e.preventDefault(), setLegal("privacy"))}>
+                Privacy Policy
+              </button>
             </span>
           </label>
           {errors.agree && (
@@ -178,6 +240,8 @@ export default function Register() {
           {!submitting && <ArrowRight size={16} />}
         </button>
       </form>
+
+      {legal && <LegalModal kind={legal} onClose={() => setLegal(null)} onSwitch={setLegal} />}
 
       <p className="auth-switch">
         Already have an account? <Link to="/login">Sign in</Link>

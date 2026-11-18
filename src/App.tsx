@@ -1,10 +1,11 @@
 import { HashRouter, Navigate, Route, Routes } from "react-router";
 import { PreferencesProvider } from "./lib/preferences";
+import { Toaster } from "./components/Toast/Toast";
+import PremiumGate from "./components/PremiumGate/PremiumGate";
 import AppLayout from "./layouts/AppLayout";
 import AuthLayout from "./layouts/AuthLayout";
 import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
-import ForgotPassword from "./pages/Auth/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import DutySchedule from "./pages/DutySchedule";
 import Requirements from "./pages/Requirements";
@@ -28,14 +29,12 @@ import CheckoutPage from "./pages/Settings/Premium/CheckoutPage";
 import InstructorHome from "./pages/Instructor/Home";
 import Groups from "./pages/Instructor/Groups";
 import GroupDetail from "./pages/Instructor/GroupDetail";
-import {
-  CiAnnouncements,
-  DutyAssignments,
-  DutyDay,
-  Evaluations,
-  Instructions,
-  Reviews,
-} from "./pages/Instructor/Placeholders";
+import DutyAssignments from "./pages/Instructor/DutyAssignments";
+import Reviews from "./pages/Instructor/Reviews";
+import Instructions from "./pages/Instructor/Instructions";
+import DutyDay from "./pages/Instructor/DutyDay";
+import Evaluations from "./pages/Instructor/Evaluations";
+import CiAnnouncements from "./pages/Instructor/CiAnnouncements";
 
 // HashRouter: the bundled app is served from files, so hash URLs survive reloads.
 export default function App() {
@@ -43,11 +42,12 @@ export default function App() {
     <PreferencesProvider>
     <HashRouter>
       <Routes>
-        {/* Signed-out screens. TODO(auth): guard the app routes once sessions exist. */}
+        {/* Signed-out screens. AppLayout sends signed-out users here.
+            Forgot Password (pages/Auth/ForgotPassword.tsx) is hidden until
+            the app can send reset emails. */}
         <Route element={<AuthLayout />}>
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
-          <Route path="forgot-password" element={<ForgotPassword />} />
         </Route>
 
         <Route element={<AppLayout />}>
@@ -56,17 +56,21 @@ export default function App() {
           <Route path="requirements" element={<Requirements />} />
           <Route path="tasks" element={<Tasks />} />
           <Route path="duty-checklist" element={<DutyChecklist />} />
-          <Route path="ai-study" element={<AiStudy />} />
-          <Route path="ai-study/chat" element={<AiChat />} />
-          <Route path="ai-study/quizlab" element={<Quizlab />} />
-          <Route path="ai-study/quiz/:id" element={<QuizSession />} />
+          {/* Premium: AI Study and Quick Links (Help & Support and Announcements stay free). */}
+          <Route element={<PremiumGate />}>
+            <Route path="ai-study" element={<AiStudy />} />
+            <Route path="ai-study/chat" element={<AiChat />} />
+            <Route path="ai-study/quizlab" element={<Quizlab />} />
+            <Route path="ai-study/quiz/:id" element={<QuizSession />} />
+            <Route path="quick-links" element={<QuickLinks />} />
+            <Route path="quick-links/learning-hub" element={<LearningHub />} />
+            <Route path="quick-links/upload" element={<UploadMaterials />} />
+            <Route path="quick-links/handbook" element={<Handbook />} />
+          </Route>
           <Route path="ci-notes" element={<CiNotes />} />
           <Route path="progress" element={<Progress />} />
-          <Route path="quick-links" element={<QuickLinks />} />
-          <Route path="quick-links/learning-hub" element={<LearningHub />} />
-          <Route path="quick-links/upload" element={<UploadMaterials />} />
-          <Route path="quick-links/announcements" element={<Announcements />} />
-          <Route path="quick-links/handbook" element={<Handbook />} />
+          <Route path="announcements" element={<Announcements />} />
+          <Route path="quick-links/announcements" element={<Navigate to="/announcements" replace />} />
           <Route path="quick-links/help" element={<HelpSupport />} />
           {/* Clinical instructor */}
           <Route path="ci" element={<InstructorHome />} />
@@ -86,6 +90,7 @@ export default function App() {
         </Route>
       </Routes>
     </HashRouter>
+    <Toaster />
     </PreferencesProvider>
   );
 }

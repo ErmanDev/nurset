@@ -8,6 +8,7 @@ import Modal from "../../components/Modal/Modal";
 import { TextField } from "../../components/TextField/TextField";
 import GroupFormModal from "./GroupFormModal";
 import { ReadinessDots, StudentAvatar, shortDay } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 import "./Instructor.css";
 
 export default function GroupDetail() {
@@ -197,7 +198,9 @@ export default function GroupDetail() {
           groupName={group.name}
           onClose={() => setAdding(false)}
           onAdd={async (identifier) => {
-            setDetail(await api.addGroupMember(groupId, identifier));
+            const updated = await api.addGroupMember(groupId, identifier);
+            setDetail(updated);
+            toast.created("Student added", `${identifier.trim()} joined ${updated.group.name}.`);
             setAdding(false);
           }}
         />
@@ -214,6 +217,7 @@ export default function GroupDetail() {
           if (!removing) return;
           try {
             setDetail(await api.removeGroupMember(groupId, removing.studentId));
+            toast.deleted("Student removed", `${removing.fullName} was removed from the group.`);
           } catch (err) {
             setError(String(err));
           }
@@ -230,6 +234,7 @@ export default function GroupDetail() {
         onClose={() => setDeleting(false)}
         onConfirm={async () => {
           await api.deleteGroup(groupId);
+          toast.deleted("Group deleted", detail ? `“${detail.group.name}” was deleted.` : undefined);
           navigate("/ci/groups", { replace: true });
         }}
       />

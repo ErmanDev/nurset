@@ -3,7 +3,6 @@
 // `schema_migrations`, so it's safe to run repeatedly.
 //
 //   pnpm db:migrate            # uses DATABASE_URL (from database/postgres/.env)
-//   pnpm db:migrate --seed     # also loads seed/dev_seed.sql (local databases only)
 //   pnpm db:status             # list applied / pending migrations
 //
 // For Render, set DATABASE_URL to the database's *External* URL when running
@@ -16,11 +15,9 @@ import pg from "pg";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const migrationsDir = join(root, "migrations");
-const seedFile = join(root, "seed", "dev_seed.sql");
 
 const args = new Set(process.argv.slice(2));
 const statusOnly = args.has("--status");
-const withSeed = args.has("--seed");
 
 const url = process.env.DATABASE_URL;
 if (!url) {
@@ -73,16 +70,6 @@ async function main() {
     }
   }
   if (pending.length === 0) console.log("Database is up to date.");
-
-  if (withSeed) {
-    if (!isLocal && !args.has("--force")) {
-      throw new Error("Refusing to load sample data into a non-local database (add --force if you really mean it).");
-    }
-    await client.query("BEGIN");
-    await client.query(await readFile(seedFile, "utf8"));
-    await client.query("COMMIT");
-    console.log("Loaded dev seed (demo@nurset.local).");
-  }
 }
 
 main()

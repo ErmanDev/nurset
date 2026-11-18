@@ -6,6 +6,7 @@ import { api } from "../../../lib/api";
 import { pastDateError, todayIso } from "../../../lib/format";
 import type { CiNote, Duty } from "../../../lib/types";
 import { dutyLabel } from "../notes";
+import { toast } from "../../../components/Toast/Toast";
 
 interface Props {
   /** Present when editing. */
@@ -89,7 +90,10 @@ export default function NoteFormModal({ note, areaOptions, onClose, onSaved }: P
     setSaving(true);
     setServerError(null);
     try {
-      onSaved(note ? await api.updateCiNote(note.id, input) : await api.addCiNote(input));
+      const saved = note ? await api.updateCiNote(note.id, input) : await api.addCiNote(input);
+      if (note) toast.updated("Note updated", `Changes to “${saved.title}” were saved.`);
+      else toast.created("Note added", `“${saved.title}” was added to your CI Notes.`);
+      onSaved(saved);
     } catch (err) {
       setServerError(String(err));
       setSaving(false);

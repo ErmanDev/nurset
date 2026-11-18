@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Modal from "../Modal/Modal";
+import { toast } from "../Toast/Toast";
 
 interface Props {
   open: boolean;
@@ -28,6 +29,8 @@ export default function ConfirmDialog({
     setBusy(true);
     try {
       await onConfirm();
+    } catch (err) {
+      toast.error("That didn't work", String(err));
     } finally {
       setBusy(false);
     }

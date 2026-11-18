@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 mod db;
 mod error;
@@ -6,6 +7,10 @@ mod question_bank;
 
 #[cfg(test)]
 mod integration_tests;
+#[cfg(test)]
+mod integration_tests_auth;
+#[cfg(test)]
+mod integration_tests_ci;
 
 use tauri::Manager;
 
@@ -13,6 +18,8 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
+            // Local secrets (GEMINI_API_KEY, DATABASE_URL) from a git-ignored .env, if present.
+            let _ = dotenvy::dotenv();
             // PostgreSQL: DATABASE_URL, or the local Docker database (pnpm db:up).
             let url = std::env::var("DATABASE_URL")
                 .unwrap_or_else(|_| db::DEFAULT_DATABASE_URL.to_string());
@@ -21,7 +28,13 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::auth::register,
             commands::auth::sign_in,
+            commands::auth::sign_out,
+            commands::auth::current_session,
+            commands::auth::change_password,
+            commands::auth::get_security,
+            commands::auth::end_sessions,
             commands::instructor::get_ci_dashboard,
             commands::instructor::list_groups,
             commands::instructor::get_group,
@@ -30,7 +43,30 @@ pub fn run() {
             commands::instructor::delete_group,
             commands::instructor::add_group_member,
             commands::instructor::remove_group_member,
+            commands::instructor::list_my_students,
+            commands::ci_assignments::list_duty_assignments,
+            commands::ci_assignments::create_duty_assignment,
+            commands::ci_assignments::update_duty_assignment,
+            commands::ci_assignments::delete_duty_assignment,
+            commands::ci_assignments::list_requirement_assignments,
+            commands::ci_assignments::create_requirement_assignment,
+            commands::ci_assignments::delete_requirement_assignment,
+            commands::ci_reviews::list_reviews,
+            commands::ci_reviews::review_document,
+            commands::ci_reviews::open_review_document,
+            commands::ci_instructions::list_instructions,
+            commands::ci_instructions::create_instruction,
+            commands::ci_instructions::delete_instruction,
+            commands::ci_duty_day::get_duty_day,
+            commands::ci_duty_day::set_attendance,
+            commands::ci_duty_day::get_evaluations,
+            commands::ci_duty_day::save_evaluation,
+            commands::ci_announcements::list_ci_announcements,
+            commands::ci_announcements::create_announcement,
+            commands::ci_announcements::delete_announcement,
             commands::dashboard::get_dashboard,
+            commands::notifications::list_notifications,
+            commands::notifications::mark_notifications_read,
             commands::profile::get_profile,
             commands::progress::get_progress,
             commands::settings::get_settings,
@@ -50,6 +86,7 @@ pub fn run() {
             commands::requirements::add_requirement,
             commands::documents::list_documents,
             commands::documents::upload_document,
+            commands::documents::open_document,
             commands::tasks::list_tasks,
             commands::tasks::add_task,
             commands::tasks::update_task,
@@ -85,6 +122,7 @@ pub fn run() {
             commands::ai_study::answer_question,
             commands::ai_study::finish_quiz,
             commands::ai_study::restart_quiz,
+            commands::ai_study::get_quiz_feedback,
             commands::ai_study::list_chat_messages,
             commands::ai_study::send_chat_message,
             commands::ai_study::clear_chat,

@@ -1,0 +1,552 @@
+/* Shared styles for the instructor tool pages (assignments, reviews,
+   instructions, duty day, evaluations, announcements). */
+
+.ci-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ci-muted-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ci-tabs {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 10px;
+  background: #e5e9f0;
+}
+
+.ci-tabs button {
+  height: 32px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.ci-tabs button.is-active {
+  background: var(--surface);
+  box-shadow: 0 1px 3px rgba(22, 38, 66, 0.12);
+  color: var(--primary-strong);
+  font-weight: 600;
+}
+
+.ci-tabs--wide {
+  align-self: flex-start;
+}
+
+.ci-select select {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.ci-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ci-chips button {
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.ci-chips button.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+.ci-empty {
+  padding: 16px 20px;
+}
+
+.ci-items {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ci-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 4px rgba(22, 38, 66, 0.04), 0 8px 20px rgba(22, 38, 66, 0.08);
+}
+
+.ci-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.ci-item-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ci-item-title h3 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ci-chip {
+  padding: 2px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ci-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ci-item-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ci-item-meta .is-overdue {
+  color: #c93a52;
+  font-weight: 500;
+}
+
+.ci-item-notes {
+  margin-top: 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.ci-spacer {
+  flex: 1;
+}
+
+.ci-form-note {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--surface-muted);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ---------- reviews ---------- */
+
+.ci-review-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 4px rgba(22, 38, 66, 0.04), 0 8px 20px rgba(22, 38, 66, 0.08);
+}
+
+.ci-review-top {
+  display: flex;
+  gap: 12px;
+}
+
+.ci-feedback {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--note-accent);
+  border-radius: 6px;
+  background: var(--note-bg);
+  font-size: 12px;
+}
+
+.ci-review-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.ci-approve-btn {
+  background: #2f9a62;
+  box-shadow: 0 4px 12px rgba(47, 154, 98, 0.28);
+}
+
+.ci-approve-btn:hover:not(:disabled) {
+  background: #23804f;
+}
+
+.ci-req-table {
+  padding: 4px 18px;
+}
+
+.ci-req-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 0;
+}
+
+.ci-req-row + .ci-req-row {
+  border-top: 1px solid var(--border);
+}
+
+.ci-req-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 200px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- instructions ---------- */
+
+.ci-instruction {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 4px rgba(22, 38, 66, 0.04), 0 8px 20px rgba(22, 38, 66, 0.08);
+}
+
+.ci-instruction-body {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.segmented--2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ci-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.ci-toggle-row span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ci-toggle-row strong {
+  font-size: 12.5px;
+}
+
+.ci-toggle-row small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ---------- duty day ---------- */
+
+.ci-daybar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.ci-daybar-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  text-align: center;
+}
+
+.ci-daybar-label strong {
+  font-size: 15px;
+}
+
+.ci-daybar-label small {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.ci-date-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 12.5px;
+}
+
+.ci-att-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.att-present {
+  --att: #23804f;
+  --att-bg: #dff3e7;
+}
+.att-late {
+  --att: #a86c0f;
+  --att-bg: #fdf0d9;
+}
+.att-absent {
+  --att: #c93a52;
+  --att-bg: #fdecee;
+}
+.att-excused {
+  --att: #5b6577;
+  --att-bg: #eef1f5;
+}
+.att-unmarked {
+  --att: var(--text-muted);
+  --att-bg: var(--surface);
+}
+
+.ci-att-summary span {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--att-bg);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--att);
+}
+
+.ci-shift {
+  padding: 14px 18px 6px;
+  box-shadow: 0 2px 4px rgba(22, 38, 66, 0.04), 0 8px 20px rgba(22, 38, 66, 0.08);
+}
+
+.ci-shift-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ci-shift-head h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.ci-shift-head small {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.ci-att-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.4fr) 90px auto 96px minmax(120px, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.ci-att-row + .ci-att-row {
+  border-top: 1px solid var(--border);
+}
+
+.ci-att-row .ci-student strong {
+  font-size: 13px;
+}
+
+.ci-att-row .ci-student small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ci-att-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.ci-att-buttons button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.ci-att-buttons button:hover {
+  border-color: var(--att);
+  color: var(--att);
+}
+
+.ci-att-buttons button.is-active {
+  border-color: var(--att);
+  background: var(--att-bg);
+  color: var(--att);
+  font-weight: 600;
+}
+
+.ci-att-time,
+.ci-att-remarks {
+  height: 32px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.ci-att-time:disabled,
+.ci-att-remarks:disabled {
+  background: var(--surface-muted);
+  color: var(--text-subtle);
+}
+
+/* ---------- evaluations ---------- */
+
+.ci-tr.ci-tr--hours {
+  grid-template-columns: minmax(180px, 2fr) 100px 100px 130px minmax(130px, 1fr);
+}
+
+.ci-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  color: #d5dbe5;
+}
+
+.ci-stars .is-on {
+  color: #e5a53a;
+  fill: #e5a53a;
+}
+
+.ci-stars small {
+  margin-left: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ci-eval-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 150px 90px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+}
+
+.ci-eval-row > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ci-eval-score {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ci-rating-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ci-rating-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.ci-rating-row > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.ci-rating-row strong {
+  font-size: 13px;
+}
+
+.ci-rating-row small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ci-rating {
+  display: flex;
+  gap: 2px;
+}
+
+.ci-rating button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #cfd6e1;
+}
+
+.ci-rating button:hover {
+  background: var(--surface-muted);
+}
+
+.ci-rating button.is-on {
+  color: #e5a53a;
+}
+
+.ci-rating button.is-on svg {
+  fill: #e5a53a;
+}
+
+@media (max-width: 1100px) {
+  .ci-att-row {
+    grid-template-columns: minmax(150px, 1fr) 80px;
+  }
+
+  .ci-att-buttons,
+  .ci-att-time,
+  .ci-att-remarks {
+    grid-column: span 2;
+  }
+
+  .ci-eval-row {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+  }
+}

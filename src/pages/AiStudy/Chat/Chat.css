@@ -45,14 +45,15 @@
   text-align: center;
 }
 
+/* Nurse assistant portrait, cropped to a circle. */
 .ai-chat-bot {
-  display: grid;
-  place-items: center;
-  width: 92px;
-  height: 92px;
+  width: 96px;
+  height: 96px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #d5e2fa, #c2d4f6);
-  color: #5a6fd6;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px #c2d4f6, 0 8px 22px rgba(62, 119, 198, 0.22);
+  background: #d5e2fa;
 }
 
 .ai-chat-empty h2 {
@@ -119,14 +120,15 @@
 }
 
 .ai-msg-avatar {
-  display: grid;
-  place-items: center;
   flex-shrink: 0;
-  width: 30px;
-  height: 30px;
+  align-self: flex-start;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #c2d4f6;
   background: #d5e2fa;
-  color: #5a6fd6;
 }
 
 .ai-msg-bubble {
@@ -363,4 +365,24 @@
   display: block;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.ai-composer-note {
+  margin: 6px 4px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: center;
+  color: var(--text-subtle);
+}
+
+.ai-chat-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--red);
+}
+
+.ai-chat-delete:hover {
+  border-color: #f3c3cc;
+  background: #fdecef;
 }

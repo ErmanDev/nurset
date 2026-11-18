@@ -17,14 +17,17 @@ use crate::commands::*;
 use crate::commands::{iso, today};
 use crate::db::{Db, DEFAULT_DATABASE_URL};
 
-async fn app_with_test_user() -> (App<MockRuntime>, i64) {
+pub(crate) async fn app_with_test_user() -> (App<MockRuntime>, i64) {
     let url = std::env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DATABASE_URL.to_string());
     let db = Db::connect_lazy(&url).expect("pool");
+    // Tests run in parallel and the clock can repeat, so add a per-process counter.
+    static NEXT: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     let nanos = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_nanos();
     let uid: i64 = sqlx::query_scalar(
         "INSERT INTO users (email, full_name, display_name) VALUES ($1, 'Test Student', 'Tester') RETURNING id",
     )
-    .bind(format!("test-{nanos}@nurset.local"))
+    .bind(format!("test-{nanos}-{n}@nurset.local"))
     .fetch_one(&db.pool)
     .await
     .expect("insert test user — is the database running and migrated?");
@@ -148,6 +151,16 @@ async fn every_command_works_against_postgres() {
     }
     assert_eq!(ci_notes::list_ci_notes(st()).await.unwrap().len(), 1);
 
+    // ----- Premium gating: free accounts are blocked -----
+    assert_eq!(ai_study::list_quizzes(st()).await.unwrap_err().to_string(), PREMIUM_REQUIRED);
+    assert!(quick_links::list_materials(st()).await.is_err(), "Learning Hub is Premium");
+    assert!(quick_links::list_announcements(st()).await.is_ok(), "announcements stay free");
+    let theme = HashMap::from([("theme".to_string(), "dark".to_string())]);
+    assert!(settings::set_settings(st(), theme.clone()).await.is_err(), "theme is Premium");
+    settings::activate_premium(st(), "monthly".into(), "gcash".into()).await.unwrap();
+    settings::set_settings(st(), theme).await.unwrap();
+    assert_eq!(settings::get_settings(st()).await.unwrap().get("theme").map(String::as_str), Some("dark"));
+
     // ----- AI study -----
     let created = ai_study::create_quiz(
         st(),
@@ -173,8 +186,12 @@ async fn every_command_works_against_postgres() {
     let reply = ai_study::send_chat_message(st(), "What is ADPIE?".into(), None).await.unwrap();
     assert_eq!(reply.len(), 2);
     assert_eq!(ai_study::list_chat_messages(st()).await.unwrap().len(), 2);
-    ai_study::clear_chat(st()).await.unwrap();
     assert_eq!(ai_study::list_study_activity(st(), Some(10)).await.unwrap().len(), 2); // quiz + chat
+    ai_study::clear_chat(st()).await.unwrap();
+    assert!(ai_study::list_chat_messages(st()).await.unwrap().is_empty(), "chat deleted");
+    let activity = ai_study::list_study_activity(st(), Some(10)).await.unwrap();
+    assert_eq!(activity.len(), 1, "the chat's recent-activity entry is removed too");
+    assert!(activity.iter().all(|a| a.kind != "chat"));
 
     // ----- progress -----
     for range in ["week", "month", "all"] {
@@ -194,7 +211,7 @@ async fn every_command_works_against_postgres() {
     assert!(quick_links::get_handbook(st()).await.unwrap().is_none());
     assert!(quick_links::list_quick_links(st()).await.unwrap().is_empty());
     let journey = quick_links::get_study_journey(st()).await.unwrap();
-    assert!(journey.sessions_today >= 2 && journey.streak_days >= 1);
+    assert!(journey.sessions_today >= 1 && journey.streak_days >= 1);
 
     // ----- settings -----
     settings::set_settings(st(), HashMap::from([("theme".into(), "dark".into()), ("study_daily_goal".into(), "5".into())]))
@@ -221,9 +238,12 @@ async fn every_command_works_against_postgres() {
     let s = settings::get_settings(st()).await.unwrap();
     assert_eq!(s.get("premium_plan").map(String::as_str), Some("yearly"));
     assert_eq!(s.get("theme").map(String::as_str), Some("dark"));
-    assert_eq!(settings::list_receipts(st()).await.unwrap().len(), 2);
+    assert_eq!(settings::list_receipts(st()).await.unwrap().len(), 3); // incl. the gating check's
     settings::cancel_premium(st()).await.unwrap();
-    assert!(!settings::get_settings(st()).await.unwrap().contains_key("premium_plan"));
+    let after = settings::get_settings(st()).await.unwrap();
+    assert!(!after.contains_key("premium_plan"));
+    assert!(!after.contains_key("theme"), "free accounts fall back to the default theme");
+    assert!(ai_study::list_quizzes(st()).await.is_err(), "AI Study locks again after cancelling");
     let export = settings::export_json(&st().pool, uid).await.unwrap();
     assert_eq!(export["tables"]["tasks"].as_array().unwrap().len(), 1);
     assert!(export["tables"]["profile"][0].get("password_hash").is_none());
@@ -284,17 +304,22 @@ async fn instructor_home_and_groups() {
         .await
         .unwrap();
 
-    // Sign in as a fresh instructor.
+    // Sign in as a fresh instructor, created the way `pnpm db:create-instructor`
+    // does it (bcrypt via pgcrypto), so the two hash formats stay compatible.
     let ci_email = format!("test-{nanos}-ci@nurset.local");
+    sqlx::query("CREATE EXTENSION IF NOT EXISTS pgcrypto").execute(&pool).await.unwrap();
     let ci: i64 = sqlx::query_scalar(
-        "INSERT INTO users (email, full_name, display_name, account_type)
-         VALUES ($1, 'Test CI', 'CI Test', 'clinical_instructor') RETURNING id",
+        "INSERT INTO users (email, password_hash, full_name, display_name, account_type)
+         VALUES ($1, crypt('ci-pass-123', gen_salt('bf', 4)), 'Test CI', 'CI Test', 'clinical_instructor') RETURNING id",
     )
     .bind(&ci_email)
     .fetch_one(&pool)
     .await
     .unwrap();
-    let profile = auth::sign_in(st(), ci_email.to_uppercase()).await.unwrap(); // email is case-insensitive
+    let handle = app.handle().clone();
+    assert!(auth::sign_in(handle.clone(), st(), ci_email.clone(), "wrong-pass".into(), Some(false)).await.is_err());
+    // Email is case-insensitive.
+    let profile = auth::sign_in(handle, st(), ci_email.to_uppercase(), "ci-pass-123".into(), Some(false)).await.unwrap();
     assert_eq!((profile.id, profile.account_type.as_str()), (ci, "clinical_instructor"));
 
     let group = instructor::create_group(
@@ -343,4 +368,101 @@ async fn instructor_home_and_groups() {
     for id in [ci, student] {
         sqlx::query("DELETE FROM users WHERE id = $1").bind(id).execute(&pool).await.unwrap();
     }
+}
+
+/// Quizlab with Gemini: daily limit falls back to the bank, otherwise AI writes the quiz.
+///   cargo test --lib gemini_quizlab_live -- --ignored --nocapture
+#[tokio::test]
+#[ignore = "calls the Gemini API (needs GEMINI_API_KEY) and the database"]
+async fn gemini_quizlab_live() {
+    let _ = dotenvy::dotenv();
+    assert!(crate::ai::GeminiConfig::from_env().is_some(), "GEMINI_API_KEY in src-tauri/.env");
+    let (app, uid) = app_with_test_user().await;
+    let st = || app.state::<Db>();
+    settings::activate_premium(st(), "monthly".into(), "gcash".into()).await.unwrap();
+    let input = |topic: &str| -> ai_study::NewQuiz {
+        serde_json::from_value(serde_json::json!({
+            "topic": topic, "notes": null, "questionTypes": ["multiple_choice", "true_false"], "count": 5
+        }))
+        .unwrap()
+    };
+
+    // Today's AI quota used up: built-in questions + a notice, no Gemini call.
+    let limit = crate::ai::daily_quiz_limit();
+    for _ in 0..limit {
+        sqlx::query("INSERT INTO quizzes (user_id, title, question_types, source) VALUES ($1, 'Used', '{multiple_choice}', 'ai')")
+            .bind(uid)
+            .execute(&st().pool)
+            .await
+            .unwrap();
+    }
+    let capped = ai_study::create_quiz(st(), input("Pharmacology")).await.unwrap();
+    assert_eq!(capped.source, "bank");
+    assert!(capped.notice.unwrap().contains("today's"));
+
+    // Quota available: Gemini writes it.
+    sqlx::query("DELETE FROM quizzes WHERE user_id = $1 AND title = 'Used'").bind(uid).execute(&st().pool).await.unwrap();
+    let ai = ai_study::create_quiz(st(), input("Fluid and electrolyte balance")).await.unwrap();
+    println!("AI quiz: {} questions, notice {:?}", ai.quiz.question_count, ai.notice);
+    assert_eq!(ai.source, "ai");
+    assert!(ai.quiz.question_count >= 3);
+    let detail = ai_study::get_quiz(st(), ai.quiz.id).await.unwrap();
+    for q in &detail.questions {
+        println!("  [{}] {}", q.kind, q.prompt);
+    }
+
+    // Off-topic is refused, not silently replaced.
+    let off = ai_study::create_quiz(st(), input("Video game speedruns")).await;
+    assert_eq!(off.err().map(|e| e.to_string()), Some(crate::ai::QUIZ_OFF_TOPIC.to_string()));
+
+    sqlx::query("DELETE FROM users WHERE id = $1").bind(uid).execute(&st().pool).await.unwrap();
+}
+
+/// AI feedback after finishing a quiz: written once, cached, cleared on retake.
+///   cargo test --lib gemini_feedback_live -- --ignored --nocapture
+#[tokio::test]
+#[ignore = "calls the Gemini API (needs GEMINI_API_KEY) and the database"]
+async fn gemini_feedback_live() {
+    let _ = dotenvy::dotenv();
+    assert!(crate::ai::GeminiConfig::from_env().is_some(), "GEMINI_API_KEY in src-tauri/.env");
+    let (app, uid) = app_with_test_user().await;
+    let st = || app.state::<Db>();
+    settings::activate_premium(st(), "monthly".into(), "gcash".into()).await.unwrap();
+    let created = ai_study::create_quiz(
+        st(),
+        serde_json::from_value(serde_json::json!({
+            "topic": "Cardiac medications", "notes": null, "questionTypes": ["multiple_choice"], "count": 4
+        }))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+    let quiz = ai_study::get_quiz(st(), created.quiz.id).await.unwrap();
+    assert!(ai_study::get_quiz_feedback(st(), quiz.quiz.id).await.is_err(), "not finished yet");
+
+    // Answer everything with the first choice (some right, likely some wrong).
+    for q in &quiz.questions {
+        ai_study::answer_question(st(), q.id, 0).await.unwrap();
+    }
+    ai_study::finish_quiz(st(), quiz.quiz.id).await.unwrap();
+
+    let fb = ai_study::get_quiz_feedback(st(), quiz.quiz.id).await.unwrap();
+    println!("source {} | {}\nstrengths {:?}\nreview {:?}\nnext {:?}", fb.source, fb.summary, fb.strengths, fb.review_topics, fb.next_steps);
+    assert_eq!(fb.source, "ai");
+    assert!(!fb.summary.is_empty() && !fb.next_steps.is_empty());
+
+    // Cached: same text without another AI call.
+    let again = ai_study::get_quiz_feedback(st(), quiz.quiz.id).await.unwrap();
+    assert_eq!(again.summary, fb.summary);
+
+    // Retake clears it.
+    ai_study::restart_quiz(st(), quiz.quiz.id).await.unwrap();
+    let cleared: Option<serde_json::Value> = sqlx::query_scalar("SELECT feedback FROM quizzes WHERE id = $1")
+        .bind(quiz.quiz.id)
+        .fetch_one(&st().pool)
+        .await
+        .unwrap();
+    assert!(cleared.is_none());
+
+    sqlx::query("DELETE FROM users WHERE id = $1").bind(uid).execute(&st().pool).await.unwrap();
 }

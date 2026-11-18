@@ -1,6 +1,6 @@
 import Toggle from "../../../components/Toggle/Toggle";
 import { usePreferences } from "../../../lib/preferences";
-import { SectionHeader, Segmented } from "./shared";
+import { SectionHeader, Segmented, SettingRow } from "./shared";
 
 const toggles: { key: string; label: string; text?: string; defaultOn: boolean }[] = [
   { key: "notif_assigned", label: "Assigned reminders", defaultOn: true },
@@ -60,8 +60,8 @@ export default function NotificationsSection() {
       </div>
 
       <div className="st-block st-schedule">
-        <div>
-          <h3>Notification frequency</h3>
+        <h3>Schedule</h3>
+        <SettingRow title="Notification frequency" text="Get each reminder right away, or bundle them into a summary.">
           <Segmented
             label="Notification frequency"
             value={get("notif_frequency")}
@@ -72,17 +72,27 @@ export default function NotificationsSection() {
               { value: "weekly", label: "Weekly" },
             ]}
           />
-        </div>
-        <div>
-          <h3>Quiet hours</h3>
+        </SettingRow>
+        <SettingRow title="Quiet hours" text="No reminders during this time.">
           <div className="st-time-range">
-            <input type="time" value={get("quiet_from")} onChange={(e) => set({ quiet_from: e.target.value })} aria-label="Quiet hours start" />
+            <input
+              type="time"
+              className="st-time"
+              value={get("quiet_from")}
+              onChange={(e) => set({ quiet_from: e.target.value })}
+              aria-label="Quiet hours start"
+            />
             <span>to</span>
-            <input type="time" value={get("quiet_to")} onChange={(e) => set({ quiet_to: e.target.value })} aria-label="Quiet hours end" />
+            <input
+              type="time"
+              className="st-time"
+              value={get("quiet_to")}
+              onChange={(e) => set({ quiet_to: e.target.value })}
+              aria-label="Quiet hours end"
+            />
           </div>
-        </div>
-        <div>
-          <h3>Preferred reminder time</h3>
+        </SettingRow>
+        <SettingRow title="Preferred reminder time" text="When daily and weekly summaries arrive.">
           <input
             type="time"
             className="st-time"
@@ -90,12 +100,11 @@ export default function NotificationsSection() {
             onChange={(e) => set({ reminder_time: e.target.value })}
             aria-label="Preferred reminder time"
           />
-        </div>
+        </SettingRow>
       </div>
 
       <p className="st-note">
-        Your choices are saved. NurSet doesn't send desktop or email notifications yet — these preferences will be used
-        once notifications are added.
+        Your choices are saved. Desktop and email notifications aren't sent yet; these settings will apply once they are.
       </p>
     </div>
   );

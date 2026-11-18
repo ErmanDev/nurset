@@ -11,6 +11,7 @@ import TaskSection from "./components/TaskSection";
 import TaskRow from "./components/TaskRow";
 import TaskFormModal from "./components/TaskFormModal";
 import { bucketTasks, groupByDate, type TaskTab } from "./tasks";
+import { toast } from "../../components/Toast/Toast";
 import "./Tasks.css";
 
 const COMPLETED_PREVIEW = 8;
@@ -214,6 +215,7 @@ export default function Tasks() {
         onConfirm={async () => {
           if (!deleting) return;
           await api.deleteTask(deleting.id);
+          toast.deleted("Task deleted", `“${deleting.title}” was removed.`);
           setDeleting(null);
           await reload();
         }}

@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { CloudUpload, FileText, X } from "lucide-react";
 import "./FileDropzone.css";
 
@@ -24,10 +24,42 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif"];
+
+function extensionOf(name: string): string {
+  return name.split(".").pop()?.toLowerCase() ?? "";
+}
+
+/** Badge text and colour for the picked file's type. */
+function fileKind(name: string): { label: string; tone: string } {
+  const ext = extensionOf(name);
+  if (ext === "pdf") return { label: "PDF", tone: "red" };
+  if (ext === "doc" || ext === "docx") return { label: "DOCX", tone: "blue" };
+  if (ext === "ppt" || ext === "pptx") return { label: "PPT", tone: "amber" };
+  if (IMAGE_EXTENSIONS.includes(ext)) return { label: ext === "jpeg" ? "JPG" : ext.toUpperCase(), tone: "green" };
+  return { label: ext.toUpperCase() || "FILE", tone: "gray" };
+}
+
+/** Object URL for an image file (revoked when the file changes), else null. */
+function useImagePreview(file: File | null): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!file || !IMAGE_EXTENSIONS.includes(extensionOf(file.name))) {
+      setUrl(null);
+      return;
+    }
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return url;
+}
+
 /** Drag-and-drop area with a "browse" fallback. Holds a single file. */
 export default function FileDropzone({ file, onChange, accept, hint, error, large, subtitle }: Props) {
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
+  const preview = useImagePreview(large ? null : file);
 
   function handleDrop(e: DragEvent) {
     e.preventDefault();
@@ -39,18 +71,29 @@ export default function FileDropzone({ file, onChange, accept, hint, error, larg
   const browse = () => input.current?.click();
 
   if (file && !large) {
+    const kind = fileKind(file.name);
     return (
-      <div className="dropzone-file">
-        <span className="dropzone-file-icon">
-          <FileText size={18} />
-        </span>
-        <div className="dropzone-file-text">
-          <strong title={file.name}>{file.name}</strong>
-          <span>{formatBytes(file.size)}</span>
+      <div className={`dropzone-picked${preview ? " has-preview" : ""}`}>
+        {preview && (
+          <div className="dropzone-preview">
+            <img src={preview} alt={`Preview of ${file.name}`} />
+          </div>
+        )}
+        <div className="dropzone-file">
+          <span className={`dropzone-file-icon dropzone-kind--${kind.tone}`}>
+            {preview ? <FileText size={18} /> : <span className="dropzone-kind-label">{kind.label}</span>}
+          </span>
+          <div className="dropzone-file-text">
+            <strong title={file.name}>{file.name}</strong>
+            <span>
+              {kind.label} · {formatBytes(file.size)}
+            </span>
+          </div>
+          <button type="button" className="dropzone-remove" onClick={() => onChange(null)} aria-label="Remove file">
+            <X size={16} />
+          </button>
         </div>
-        <button type="button" className="dropzone-remove" onClick={() => onChange(null)} aria-label="Remove file">
-          <X size={16} />
-        </button>
+        {error && <p className="field-error">{error}</p>}
       </div>
     );
   }

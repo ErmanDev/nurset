@@ -5,6 +5,7 @@ import { TextField } from "../../components/TextField/TextField";
 import { api } from "../../lib/api";
 import type { GroupSummary } from "../../lib/types";
 import { GROUP_COLORS } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 
 interface Props {
   /** Present when editing. */
@@ -30,7 +31,10 @@ export default function GroupFormModal({ group, onClose, onSaved }: Props) {
     setSaving(true);
     setServerError(null);
     try {
-      onSaved(group ? await api.updateGroup(group.id, input) : await api.createGroup(input));
+      const saved = group ? await api.updateGroup(group.id, input) : await api.createGroup(input);
+      if (group) toast.updated("Group updated", `Changes to “${saved.name}” were saved.`);
+      else toast.created("Group created", `“${saved.name}” is ready. Add students next.`);
+      onSaved(saved);
     } catch (err) {
       setServerError(String(err));
       setSaving(false);

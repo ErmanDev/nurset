@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { HardDrive, Monitor } from "lucide-react";
+import { HardDrive } from "lucide-react";
 import { api } from "../../../lib/api";
+import { formatAddedAt } from "../../../lib/format";
 import { usePreferences } from "../../../lib/preferences";
+import { useAsync } from "../../../hooks/useAsync";
 import Modal from "../../../components/Modal/Modal";
 import Toggle from "../../../components/Toggle/Toggle";
-import { SectionHeader, SettingRow, UnavailableModal } from "./shared";
+import { SectionHeader, SettingRow } from "./shared";
+import { ChangePasswordModal, SessionList } from "./security";
+import { toast } from "../../../components/Toast/Toast";
 
-type Dialog = "sessions" | "privacy" | "delete" | null;
+type Dialog = "password" | "sessions" | "history" | "privacy" | "delete" | null;
 
 export default function PrivacySection() {
   const navigate = useNavigate();
   const { get, set, reload } = usePreferences();
-  const [unavailable, setUnavailable] = useState<string | null>(null);
+  const { data: security, reload: reloadSecurity } = useAsync(api.getSecurity);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState<string | null>(null);
@@ -26,6 +30,7 @@ export default function PrivacySection() {
     try {
       const path = await api.exportData();
       setExportResult(path);
+      toast.created("Data exported", path);
       await set({ last_export_at: new Date().toISOString().slice(0, 10) });
     } catch (err) {
       setError(String(err));
@@ -47,7 +52,19 @@ export default function PrivacySection() {
     }
   }
 
+  async function endSessions(id?: number) {
+    try {
+      await api.endSessions(id);
+      toast.deleted(id ? "Device signed out" : "Other devices signed out", "They'll need to sign in again.");
+      await reloadSecurity();
+    } catch (err) {
+      setError(String(err));
+    }
+  }
+
   const lastExport = get("last_export_at");
+  const activeCount = security?.sessions.filter((s) => s.active).length ?? 0;
+  const otherActive = security?.sessions.filter((s) => s.active && !s.current).length ?? 0;
 
   return (
     <div className="st-section">
@@ -68,29 +85,29 @@ export default function PrivacySection() {
       </div>
 
       <div className="st-block">
-        <SettingRow title="Change Password" text="Update your password regularly to keep your account secure.">
-          <button className="btn btn-secondary" onClick={() => setUnavailable("Change Password")}>
-            Manage
+        <SettingRow
+          title="Change Password"
+          text={
+            security?.passwordChangedAt
+              ? `Last changed ${formatAddedAt(security.passwordChangedAt)}.`
+              : "Update your password regularly to keep your account secure."
+          }
+        >
+          <button className="btn btn-secondary" onClick={() => setDialog("password")}>
+            Change
           </button>
         </SettingRow>
-        <SettingRow title="Two-Factor Authentication" text="Add an extra layer of security to your account.">
-          <button className="btn btn-secondary" onClick={() => setUnavailable("Two-Factor Authentication")}>
-            Enable
-          </button>
-        </SettingRow>
-        <SettingRow title="Active Sessions" text="You're signed in on this device.">
+        <SettingRow
+          title="Active Sessions"
+          text={activeCount > 1 ? `Signed in on ${activeCount} devices.` : "You're signed in on this device only."}
+        >
           <button className="btn btn-secondary" onClick={() => setDialog("sessions")}>
             Manage
           </button>
         </SettingRow>
-        <SettingRow title="Login History" text="Available once sign-in is connected.">
-          <button className="btn btn-secondary" onClick={() => setUnavailable("Login History")}>
-            Manage
-          </button>
-        </SettingRow>
-        <SettingRow title="Connected Accounts" text="Google and Microsoft sign-in.">
-          <button className="btn btn-secondary" onClick={() => navigate("/settings/account")}>
-            Manage
+        <SettingRow title="Login History" text="Your recent sign-ins, including ended sessions.">
+          <button className="btn btn-secondary" onClick={() => setDialog("history")}>
+            View
           </button>
         </SettingRow>
         <SettingRow title="Data Export" text="Download a copy of all your NurSet information (JSON).">
@@ -115,7 +132,23 @@ export default function PrivacySection() {
         </button>
       </div>
 
-      {unavailable && <UnavailableModal title={unavailable} onClose={() => setUnavailable(null)} />}
+      {dialog === "password" && <ChangePasswordModal onClose={() => setDialog(null)} onChanged={() => void reloadSecurity()} />}
+
+      {dialog === "history" && (
+        <Modal
+          open
+          onClose={() => setDialog(null)}
+          title="Login History"
+          width={520}
+          footer={
+            <button className="btn btn-primary" onClick={() => setDialog(null)}>
+              Close
+            </button>
+          }
+        >
+          <SessionList sessions={security?.sessions ?? []} onEnd={(id) => void endSessions(id)} />
+        </Modal>
+      )}
 
       {exportResult && (
         <Modal
@@ -140,21 +173,21 @@ export default function PrivacySection() {
           open
           onClose={() => setDialog(null)}
           title="Active Sessions"
-          width={440}
+          width={520}
           footer={
-            <button className="btn btn-primary" onClick={() => setDialog(null)}>
-              Close
-            </button>
+            <>
+              {otherActive > 0 && (
+                <button className="btn btn-secondary" onClick={() => void endSessions()}>
+                  Sign out all other devices
+                </button>
+              )}
+              <button className="btn btn-primary" onClick={() => setDialog(null)}>
+                Close
+              </button>
+            </>
           }
         >
-          <div className="st-device">
-            <Monitor size={22} />
-            <div>
-              <strong>This computer</strong>
-              <span>NurSet desktop app · Active now</span>
-            </div>
-            <span className="badge badge--green">Current</span>
-          </div>
+          <SessionList sessions={security?.sessions ?? []} showEnded={false} onEnd={(id) => void endSessions(id)} />
         </Modal>
       )}
 

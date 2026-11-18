@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import Modal from "../../../components/Modal/Modal";
 
 /** Title + subtitle at the top of a settings section. */
 export function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -51,26 +50,5 @@ export function Segmented<T extends string>({
         </button>
       ))}
     </div>
-  );
-}
-
-/** Honest "not available yet" dialog for features that need sign-in/online services. */
-export function UnavailableModal({ title, onClose }: { title: string; onClose: () => void }) {
-  return (
-    <Modal
-      open
-      onClose={onClose}
-      title={title}
-      width={420}
-      footer={
-        <button className="btn btn-primary" onClick={onClose}>
-          Got it
-        </button>
-      }
-    >
-      <p className="st-muted">
-        This needs NurSet sign-in, which isn't connected yet. This option will work once sign-in is added.
-      </p>
-    </Modal>
   );
 }

@@ -6,6 +6,7 @@ import { api } from "../../../lib/api";
 import { daysUntil, parseDate, pastDateError, toIso, todayIso } from "../../../lib/format";
 import type { Task, TaskPriority } from "../../../lib/types";
 import { TASK_CATEGORIES, normalizeCategory, priorityInfo } from "../tasks";
+import { toast } from "../../../components/Toast/Toast";
 
 interface Props {
   /** Present when editing. */
@@ -91,8 +92,13 @@ export default function TaskFormModal({ task, onClose, onSaved }: Props) {
     setSaving(true);
     setServerError(null);
     try {
-      if (task) await api.updateTask(task.id, input);
-      else await api.addTask(input);
+      if (task) {
+        await api.updateTask(task.id, input);
+        toast.updated("Task updated", `Changes to “${input.title.trim()}” were saved.`);
+      } else {
+        await api.addTask(input);
+        toast.created("Task added", `“${input.title.trim()}” was added to your tasks.`);
+      }
       onSaved();
     } catch (err) {
       setServerError(String(err));

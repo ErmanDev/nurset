@@ -14,6 +14,7 @@ import CiReminderPanel from "./components/CiReminderPanel";
 import BeforeYouGo from "./components/BeforeYouGo";
 import ChangeDutyModal from "./components/ChangeDutyModal";
 import AddChecklistItemModal, { type ChecklistCategory } from "./components/AddChecklistItemModal";
+import { toast } from "../../components/Toast/Toast";
 import "./DutyChecklist.css";
 
 type ListSetter = (fn: (c: ChecklistDetail) => ChecklistDetail) => void;
@@ -78,7 +79,10 @@ export default function DutyChecklist() {
       },
       onDelete: (item: ChecklistItem) => {
         set((c) => ({ ...c, items: c.items.filter((i) => i.id !== item.id) }));
-        api.deleteChecklistItem(item.id).catch(resync);
+        api
+          .deleteChecklistItem(item.id)
+          .then(() => toast.deleted("Item removed", `“${item.label}” was removed from the checklist.`))
+          .catch(resync);
       },
     };
   }
@@ -99,6 +103,7 @@ export default function DutyChecklist() {
       setBag((c) => ({ ...c, items: [...c.items, item] }));
     }
     setAddCategory(null);
+    toast.created("Checklist item added", `“${label.trim()}” was added.`);
   }
 
   function toggleReadiness(key: ReadinessKey, checked: boolean) {

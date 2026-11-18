@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FileText, Upload } from "lucide-react";
+import { FileText, Info, Upload } from "lucide-react";
 import { api } from "../../lib/api";
 import { formatLongDate } from "../../lib/format";
 import { useAsync } from "../../hooks/useAsync";
@@ -17,6 +17,8 @@ const summaryCards: { group: StatusGroup; title: string; caption: string; tone: 
 
 export default function Requirements() {
   const { data: documents, error, reload } = useAsync(api.listDocuments);
+  const { data: profile } = useAsync(api.getProfile);
+  const noInstructor = profile?.accountType === "student" && profile.instructorCount === 0;
   const [filter, setFilter] = useState<StatusGroup | null>(null);
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<SubmittedDocument | null>(null);
@@ -43,6 +45,20 @@ export default function Requirements() {
           <Upload size={15} /> Upload Document
         </button>
       </div>
+
+      {noInstructor && (
+        <div className="review-notice" role="note">
+          <Info size={17} />
+          <div>
+            <strong>No clinical instructor yet</strong>
+            <span>
+              Your uploads are saved, but no instructor can review them until one adds you to their clinical group. Give
+              your instructor your email{profile?.studentId ? " or student ID" : ""}
+              {profile?.email ? ` (${profile.email}${profile.studentId ? ` · ${profile.studentId}` : ""})` : ""}.
+            </span>
+          </div>
+        </div>
+      )}
 
       {error && <div className="alert-error">Couldn't load your documents: {error}</div>}
 

@@ -21,6 +21,7 @@ export default function Announcements() {
       <QlHeader
         title="Announcements"
         subtitle="Stay updated with important announcements from your clinical instructors and nursing department"
+        back={null}
       />
 
       <div className="ql-two-col">

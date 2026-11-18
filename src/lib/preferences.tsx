@@ -98,6 +98,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const set = useCallback(async (values: Record<string, string>) => {
     setPrefs((p) => ({ ...p, ...values }));
     await api.setSettings(values);
+    window.dispatchEvent(new Event("nurset:data-changed")); // e.g. notification toggles
   }, []);
 
   const get = useCallback((key: string) => prefs[key] ?? DEFAULTS[key] ?? "", [prefs]);

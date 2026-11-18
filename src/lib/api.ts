@@ -36,6 +36,10 @@ import type {
   NewTask,
   Profile,
   QuickLink,
+  RegisterInput,
+  QuizFeedback,
+  NotificationFeed,
+  SecurityOverview,
   Requirement,
   ScheduleEvent,
   SubmittedDocument,
@@ -57,9 +61,24 @@ async function packUpload(file: File, details: object): Promise<Uint8Array> {
 }
 
 export const api = {
-  /** TODO(auth): password isn't checked yet. */
-  signIn: (identifier: string) => invoke<Profile>("sign_in", { identifier }),
+  // Accounts & sessions
+  register: (input: RegisterInput) => invoke<Profile>("register", { input }),
+  signIn: (identifier: string, password: string, remember: boolean) =>
+    invoke<Profile>("sign_in", { identifier, password, remember }),
+  signOut: () => invoke<void>("sign_out"),
+  /** The signed-in profile (restoring "Keep me signed in"), or null. */
+  currentSession: () => invoke<Profile | null>("current_session"),
+  changePassword: (current: string, newPassword: string) =>
+    invoke<void>("change_password", { current, newPassword }),
+  getSecurity: () => invoke<SecurityOverview>("get_security"),
+  /** Signs out one other session, or all other sessions when `id` is omitted. */
+  endSessions: (id?: number) => invoke<void>("end_sessions", { id: id ?? null }),
   getDashboard: () => invoke<Dashboard>("get_dashboard"),
+
+  // Notification bell
+  listNotifications: () => invoke<NotificationFeed>("list_notifications"),
+  /** Marks the given keys read, or everything currently listed when omitted. */
+  markNotificationsRead: (keys?: string[]) => invoke<void>("mark_notifications_read", { keys: keys ?? null }),
 
   // Clinical instructor
   getCiDashboard: () => invoke<CiDashboard>("get_ci_dashboard"),
@@ -100,6 +119,8 @@ export const api = {
   addRequirement: (input: { title: string; dueDate: string; description?: string | null }) =>
     invoke<Requirement>("add_requirement", { input }),
   listDocuments: () => invoke<SubmittedDocument[]>("list_documents"),
+  /** Opens the student's own submitted file in its default app. */
+  openDocument: (id: number) => invoke<void>("open_document", { id }),
   uploadDocument: async (file: File, details: DocumentUploadDetails) =>
     invoke<SubmittedDocument>("upload_document", await packUpload(file, details)),
 
@@ -150,11 +171,16 @@ export const api = {
   listStudyActivity: (limit?: number) => invoke<StudyActivity[]>("list_study_activity", { limit }),
   listQuizzes: () => invoke<QuizSummary[]>("list_quizzes"),
   createQuiz: (input: NewQuiz) =>
-    invoke<{ quiz: QuizSummary; requested: number }>("create_quiz", { input }),
+    invoke<{ quiz: QuizSummary; requested: number; source: "ai" | "bank"; notice: string | null }>(
+      "create_quiz",
+      { input },
+    ),
   getQuiz: (id: number) => invoke<QuizDetail>("get_quiz", { id }),
   answerQuestion: (id: number, chosenIndex: number) =>
     invoke<QuizQuestion>("answer_question", { id, chosenIndex }),
   finishQuiz: (id: number) => invoke<QuizSummary>("finish_quiz", { id }),
+  /** AI (or basic) feedback on a finished quiz; cached until the quiz is retaken. */
+  getQuizFeedback: (id: number) => invoke<QuizFeedback>("get_quiz_feedback", { id }),
   restartQuiz: (id: number) => invoke<QuizDetail>("restart_quiz", { id }),
   listChatMessages: () => invoke<ChatMessage[]>("list_chat_messages"),
   sendChatMessage: (content: string, attachment?: string | null) =>

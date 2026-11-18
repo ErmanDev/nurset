@@ -3,8 +3,8 @@
 ```
 database/postgres/
   migrations/           0001_init.sql … — the schema (multi-user)
-  seed/dev_seed.sql     sample data for LOCAL development only
   scripts/migrate.mjs   migration runner (tracks schema_migrations)
+  scripts/create-instructor.mjs   creates a clinical instructor account
   docker-compose.yml    local PostgreSQL 16 on port 5433
   .env.example          DATABASE_URL template (copy to .env, git-ignored)
 ```
@@ -13,9 +13,21 @@ The desktop app connects to PostgreSQL through its Rust backend (SQLx). It
 reads `DATABASE_URL`, falling back to the local Docker database
 `postgres://nurset:nurset_dev@localhost:5433/nurset`.
 
-Until sign-in exists, the app acts as the **first user** in the `users` table
-(the dev seed's `demo@nurset.local`), creating `student@nurset.local` if the
-table is empty.
+## Accounts
+
+- **Nursing students** sign up on the app's Register screen.
+- **Clinical instructors** are created by an administrator:
+
+  ```sh
+  pnpm db:create-instructor --email ci@school.edu --name "Angela Reyes, RN" --password "…"
+  ```
+
+  Running it again for the same email resets that account's password.
+
+Passwords are stored as bcrypt hashes. Each sign-in creates a row in `sessions`
+(only the token's SHA-256 is stored); "Keep me signed in" saves the token in the
+app's config folder (`session.json`) so the next launch restores it. Settings ›
+Privacy & Security lists sessions and can sign other devices out.
 
 ## Local development
 
@@ -28,7 +40,6 @@ Or step by step:
 ```sh
 pnpm db:up        # start PostgreSQL 16 in Docker (Docker Desktop must be running)
 pnpm db:migrate   # apply pending migrations
-pnpm db:seed      # migrate + load sample data (demo@nurset.local)
 pnpm db:status    # list applied / pending migrations
 pnpm db:down      # stop the container (data is kept in a Docker volume)
 ```
@@ -54,7 +65,7 @@ cd src-tauri && cargo test -- --include-ignored
 1. Render Dashboard → **New → PostgreSQL** (PostgreSQL 16, same region you'll use for the API).
 2. Copy the **External Database URL** into `database/postgres/.env` as `DATABASE_URL`.
 3. `pnpm db:migrate` — creates the schema (TLS is used automatically for non-local hosts).
-4. Do **not** run `db:seed` against Render; it refuses unless you pass `--force`.
+4. `pnpm db:create-instructor …` for each clinical instructor.
 
 > **Important:** don't ship the desktop app pointed at Render PostgreSQL —
 > the database password would be inside the app. Before release, add an API

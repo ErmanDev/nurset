@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { BookOpen, Check, ChevronRight, Plus, Sparkles, type LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router";
+import { usePremium } from "../../../lib/premium";
+import { PremiumBadge } from "../../../components/PremiumGate/PremiumGate";
 
 const chat = (prompt: string) => `/ai-study/chat?prompt=${encodeURIComponent(prompt)}`;
 
@@ -22,6 +24,7 @@ const actions: StudyAction[] = [
  * starter prompt (?prompt=…), Quizlab, or the attachment menu (?attach=1).
  */
 export default function AiStudyBanner() {
+  const { premium } = usePremium();
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
 
@@ -40,7 +43,7 @@ export default function AiStudyBanner() {
             <Sparkles size={22} />
           </span>
           <div>
-            <p className="ai-panel-eyebrow">NurSet AI</p>
+            <p className="ai-panel-eyebrow">NurSet AI {!premium && <PremiumBadge />}</p>
             <h2 className="ai-panel-title">Your AI Study Assistant</h2>
           </div>
           <button className="ai-pill" onClick={() => navigate("/ai-study")}>

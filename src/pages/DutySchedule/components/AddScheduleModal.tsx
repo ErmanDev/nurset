@@ -4,6 +4,7 @@ import Modal from "../../../components/Modal/Modal";
 import { TextAreaField, TextField } from "../../../components/TextField/TextField";
 import { api } from "../../../lib/api";
 import { pastDateError, todayIso } from "../../../lib/format";
+import { toast } from "../../../components/Toast/Toast";
 
 export type ScheduleKind = "duty" | "exam" | "other";
 
@@ -102,6 +103,10 @@ export default function AddScheduleModal({ open, initialKind, initialDate, onClo
           description: values.description || null,
         });
       }
+      toast.created(
+        isDuty ? "Duty added" : kind === "exam" ? "Exam added" : "Event added",
+        `“${values.title.trim()}” was added to your schedule.`,
+      );
       onSaved();
     } catch (err) {
       setServerError(String(err));

@@ -574,3 +574,122 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- results: feedback ---------- */
+
+.qz-banner .qz-feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  align-self: center;
+}
+
+.qz-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 46vh;
+  margin-top: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  text-align: left;
+}
+
+.qz-feedback-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--primary-strong);
+}
+
+.qz-feedback-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.qz-feedback-loading .ai-typing {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.qz-feedback-summary {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.qz-feedback-notice {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fdf3e1;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8a5a0f;
+}
+
+.qz-feedback-block h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.qz-feedback-block ul {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.qz-feedback-block li + li {
+  margin-top: 4px;
+}
+
+.qz-feedback-topics {
+  list-style: none;
+  padding-left: 0 !important;
+  display: grid;
+  gap: 8px;
+}
+
+.qz-feedback-topics li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 11px;
+  border-left: 3px solid var(--amber);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.qz-feedback-topics li + li {
+  margin-top: 0;
+}
+
+.qz-feedback-topics strong {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.qz-feedback-foot {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-subtle);
+}

@@ -5,6 +5,7 @@ import { api } from "../../lib/api";
 import { useAsync } from "../../hooks/useAsync";
 import Modal from "../../components/Modal/Modal";
 import { QlHeader, checkMaterialFile, fileDescription } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 import "./QuickLinks.css";
 
 interface Topic {
@@ -74,6 +75,7 @@ export default function Handbook() {
     setError(null);
     try {
       await api.uploadMaterial(file, { title: "Nursing Student Handbook", kind: "handbook" });
+      toast.created("Handbook uploaded", file.name);
       await reload();
     } catch (err) {
       setError(String(err));

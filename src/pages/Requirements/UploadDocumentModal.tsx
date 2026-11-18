@@ -3,8 +3,9 @@ import Modal from "../../components/Modal/Modal";
 import FileDropzone from "../../components/FileDropzone/FileDropzone";
 import { SelectField, TextAreaField, TextField } from "../../components/TextField/TextField";
 import { api } from "../../lib/api";
+import { toast } from "../../components/Toast/Toast";
 
-const ACCEPT = ".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png";
+const ACCEPT = ".pdf,.docx,.jpg,.jpeg,.png";
 const MAX_BYTES = 25 * 1024 * 1024;
 
 const documentTypes = [
@@ -44,7 +45,7 @@ export default function UploadDocumentModal({ open, onClose, onUploaded }: Props
     if (next) {
       const ext = next.name.split(".").pop()?.toLowerCase() ?? "";
       if (!ACCEPT.split(",").includes(`.${ext}`)) {
-        setErrors((e) => ({ ...e, file: "Unsupported file type. Use PDF, DOC, PPT, JPG, or PNG." }));
+        setErrors((e) => ({ ...e, file: "Unsupported file type. Use PDF, DOCX, JPG, or PNG." }));
         return;
       }
       if (next.size > MAX_BYTES) {
@@ -70,6 +71,7 @@ export default function UploadDocumentModal({ open, onClose, onUploaded }: Props
     setServerError(null);
     try {
       await api.uploadDocument(file, { documentType, title: title.trim(), notes });
+      toast.created("Document submitted", `“${title.trim()}” was sent for review.`);
       onUploaded();
     } catch (err) {
       setServerError(String(err));
@@ -91,7 +93,7 @@ export default function UploadDocumentModal({ open, onClose, onUploaded }: Props
           file={file}
           onChange={pickFile}
           accept={ACCEPT}
-          hint="PDF, DOC, DOCX, PPT, JPG, PNG · up to 25 MB"
+          hint="PDF, DOCX, JPG, PNG · up to 25 MB"
           error={errors.file}
         />
 

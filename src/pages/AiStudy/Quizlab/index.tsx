@@ -19,6 +19,7 @@ import { useAsync } from "../../../hooks/useAsync";
 import type { QuestionKind, QuizSummary } from "../../../lib/types";
 import { usePreferences } from "../../../lib/preferences";
 import { BackLink, PreviewNote, kindInfo } from "../shared";
+import { toast } from "../../../components/Toast/Toast";
 import "../AiStudy.css";
 import "./Quizlab.css";
 
@@ -80,8 +81,19 @@ export default function Quizlab() {
     setCreating(true);
     setServerError(null);
     try {
-      const { quiz, requested } = await api.createQuiz({ topic, notes: notes || null, questionTypes: types, count });
-      navigate(`/ai-study/quiz/${quiz.id}`, { state: { requested } });
+      const { quiz, requested, source, notice } = await api.createQuiz({
+        topic,
+        notes: notes || null,
+        questionTypes: types,
+        count,
+      });
+      toast.created(
+        "Quiz created",
+        source === "ai"
+          ? `NurSet AI wrote ${quiz.questionCount} questions on “${quiz.title}”.`
+          : `“${quiz.title}” is ready with built-in practice questions.`,
+      );
+      navigate(`/ai-study/quiz/${quiz.id}`, { state: { requested, source, notice } });
     } catch (err) {
       setServerError(String(err));
       setCreating(false);
@@ -197,8 +209,9 @@ export default function Quizlab() {
             <Sparkles size={16} /> {creating ? "Generating…" : "Generate Quiz with AI"}
           </button>
           <PreviewNote>
-            Preview mode: AI generation isn't connected yet, so questions come from NurSet's built-in
-            nursing practice bank (topic matches first).
+            NurSet AI (Google Gemini) writes your quiz from the topic and any notes you add. AI quizzes are limited
+            each day; after that, or if the AI is unavailable, NurSet uses its built-in practice questions. AI can
+            make mistakes, so check answers against your references.
           </PreviewNote>
         </form>
 

@@ -13,7 +13,7 @@
     "db:up": "docker compose -f database/postgres/docker-compose.yml up -d --wait",
     "db:down": "docker compose -f database/postgres/docker-compose.yml down",
     "db:migrate": "node --env-file-if-exists=database/postgres/.env database/postgres/scripts/migrate.mjs",
-    "db:seed": "node --env-file-if-exists=database/postgres/.env database/postgres/scripts/migrate.mjs --seed",
+    "db:create-instructor": "node --env-file-if-exists=database/postgres/.env database/postgres/scripts/create-instructor.mjs",
     "db:status": "node --env-file-if-exists=database/postgres/.env database/postgres/scripts/migrate.mjs --status"
   },
   "dependencies": {

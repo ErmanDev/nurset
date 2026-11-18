@@ -1,6 +1,6 @@
-import { Bell } from "lucide-react";
 import { useNavigate } from "react-router";
 import Avatar from "../Avatar/Avatar";
+import NotificationBell from "../NotificationBell/NotificationBell";
 import type { Profile } from "../../lib/types";
 
 export default function TopBar({ profile }: { profile: Profile | null }) {
@@ -15,14 +15,7 @@ export default function TopBar({ profile }: { profile: Profile | null }) {
         padding: "20px var(--page-padding) 4px",
       }}
     >
-      <button
-        className="icon-button"
-        aria-label="Notification settings"
-        title="Notification settings"
-        onClick={() => navigate("/settings/notifications")}
-      >
-        <Bell size={17} />
-      </button>
+      <NotificationBell />
       <button
         aria-label="Account settings"
         title="Account settings"

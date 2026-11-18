@@ -7,6 +7,7 @@ import type { Material, MaterialKind } from "../../lib/types";
 import Modal from "../../components/Modal/Modal";
 import { usePreferences } from "../../lib/preferences";
 import { QlHeader, materialMeta } from "./shared";
+import { toast } from "../../components/Toast/Toast";
 import "./QuickLinks.css";
 
 type Tab = "all" | MaterialKind | "bookmarked";
@@ -68,6 +69,8 @@ export default function LearningHub() {
     setData((list) => list?.map((x) => (x.id === m.id ? { ...x, bookmarked: !m.bookmarked } : x)) ?? null);
     try {
       await api.setMaterialBookmark(m.id, !m.bookmarked);
+      if (m.bookmarked) toast.deleted("Bookmark removed", `“${m.title}”`);
+      else toast.created("Bookmarked", `“${m.title}” was saved to your bookmarks.`);
     } catch (err) {
       setNotice(String(err));
     }

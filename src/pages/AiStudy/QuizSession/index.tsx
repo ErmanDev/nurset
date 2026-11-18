@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router";
-import { ClipboardPen, RotateCcw, Trophy } from "lucide-react";
+import { BookOpenCheck, ClipboardPen, Lightbulb, RotateCcw, Sparkles, ThumbsUp, Trophy } from "lucide-react";
 import { api } from "../../../lib/api";
-import type { QuizDetail, QuizSummary } from "../../../lib/types";
+import type { QuizDetail, QuizFeedback, QuizSummary } from "../../../lib/types";
 import Modal from "../../../components/Modal/Modal";
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog";
 import { BackLink, PreviewNote, kindInfo } from "../shared";
@@ -16,7 +16,9 @@ export default function QuizSession() {
   const quizId = Number(id);
   const navigate = useNavigate();
   const location = useLocation();
-  const requested = (location.state as { requested?: number } | null)?.requested;
+  const state = location.state as { requested?: number; source?: "ai" | "bank"; notice?: string | null } | null;
+  const requested = state?.requested;
+  const notice = state?.notice ?? null;
 
   const [detail, setDetail] = useState<QuizDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,6 +27,27 @@ export default function QuizSession() {
   const [showHint, setShowHint] = useState(false);
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<QuizSummary | null>(null);
+  const [feedback, setFeedback] = useState<QuizFeedback | null>(null);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  async function loadFeedback() {
+    setFeedbackLoading(true);
+    setFeedbackError(null);
+    try {
+      setFeedback(await api.getQuizFeedback(quizId));
+    } catch (err) {
+      setFeedbackError(String(err));
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
+
+  /** Opens the results window (and its feedback) for a finished quiz. */
+  function showResults(summary: QuizSummary) {
+    setResults(summary);
+    if (!feedback) void loadFeedback();
+  }
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [confirmRestart, setConfirmRestart] = useState(false);
 
@@ -93,7 +116,9 @@ export default function QuizSession() {
     try {
       const summary = await api.finishQuiz(quizId);
       setDetail((d) => d && { ...d, quiz: summary });
+      setFeedback(null);
       setResults(summary);
+      void loadFeedback();
     } catch (err) {
       setError(String(err));
     } finally {
@@ -107,6 +132,7 @@ export default function QuizSession() {
     setIndex(0);
     setSelected(null);
     setResults(null);
+    setFeedback(null);
     setSettingsOpen(false);
     setConfirmRestart(false);
   }
@@ -138,12 +164,18 @@ export default function QuizSession() {
             {quiz.completedAt && ` · Completed (${quiz.score ?? quiz.correctCount}/${total})`}
           </span>
         </div>
+        {quiz.completedAt && (
+          <button className="btn btn-secondary qz-feedback-btn" onClick={() => showResults(quiz)}>
+            <Sparkles size={15} /> Results &amp; feedback
+          </button>
+        )}
       </header>
 
-      {requested !== undefined && requested > total && (
+      {notice && <PreviewNote>{notice}</PreviewNote>}
+      {!notice && state?.source === "bank" && requested !== undefined && requested > total && (
         <PreviewNote>
           You asked for {requested} questions. The built-in practice bank has {total} for the question types you
-          picked — more will be possible once AI generation is connected.
+          picked.
         </PreviewNote>
       )}
 
@@ -216,7 +248,7 @@ export default function QuizSession() {
           onClose={() => setResults(null)}
           eyebrow="Quiz complete"
           title={quiz.title}
-          width={420}
+          width={600}
           footer={
             <>
               <button className="btn btn-secondary" onClick={() => setResults(null)}>
@@ -245,6 +277,78 @@ export default function QuizSession() {
                 : "keep practicing, you've got this."}
             </p>
           </div>
+
+          <section className="qz-feedback" aria-live="polite">
+            <p className="qz-feedback-title">
+              <Sparkles size={15} /> {feedback?.source === "basic" ? "Feedback" : "NurSet AI feedback"}
+            </p>
+            {feedbackLoading && (
+              <div className="qz-feedback-loading">
+                <span className="ai-typing">
+                  <span />
+                  <span />
+                  <span />
+                </span>
+                NurSet AI is reviewing your answers…
+              </div>
+            )}
+            {feedbackError && (
+              <div className="alert-error">
+                {feedbackError}{" "}
+                <button className="text-link" onClick={() => void loadFeedback()}>
+                  Try again
+                </button>
+              </div>
+            )}
+            {feedback && !feedbackLoading && (
+              <>
+                {feedback.notice && <p className="qz-feedback-notice">{feedback.notice}</p>}
+                <p className="qz-feedback-summary">{feedback.summary}</p>
+                {feedback.strengths.length > 0 && (
+                  <div className="qz-feedback-block">
+                    <h4>
+                      <ThumbsUp size={14} /> What you did well
+                    </h4>
+                    <ul>
+                      {feedback.strengths.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {feedback.reviewTopics.length > 0 && (
+                  <div className="qz-feedback-block">
+                    <h4>
+                      <BookOpenCheck size={14} /> Review these topics
+                    </h4>
+                    <ul className="qz-feedback-topics">
+                      {feedback.reviewTopics.map((t) => (
+                        <li key={t.topic}>
+                          <strong>{t.topic}</strong>
+                          <span>{t.why}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {feedback.nextSteps.length > 0 && (
+                  <div className="qz-feedback-block">
+                    <h4>
+                      <Lightbulb size={14} /> Next steps
+                    </h4>
+                    <ul>
+                      {feedback.nextSteps.map((s) => (
+                        <li key={s}>{s}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {feedback.source === "ai" && (
+                  <p className="qz-feedback-foot">AI feedback can make mistakes. Check key facts with your references.</p>
+                )}
+              </>
+            )}
+          </section>
         </Modal>
       )}
     </div>

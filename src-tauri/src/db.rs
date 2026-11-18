@@ -10,19 +10,25 @@ use chrono::Local;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use sqlx::Executor;
 
-use crate::error::AppResult;
+use crate::error::{AppError, AppResult};
 
 /// Local Docker database from `database/postgres/docker-compose.yml`.
 pub const DEFAULT_DATABASE_URL: &str = "postgres://nurset:nurset_dev@localhost:5433/nurset";
 
-/// Used when the database has no users yet.
-const DEFAULT_EMAIL: &str = "student@nurset.local";
+/// Error text the frontend recognises to send the user back to the sign-in screen.
+pub const SIGNED_OUT: &str = "You're signed out. Please sign in again.";
 
 pub struct Db {
     pub pool: PgPool,
-    /// Signed-in user (set by `sign_in`). Before anyone signs in this is the
-    /// first student in the database, created on demand if needed.
-    user: Mutex<Option<i64>>,
+    /// Signed-in user and their session row (set by `sign_in`, `register`, or
+    /// a restored "Keep me signed in" session).
+    user: Mutex<Option<Signed>>,
+}
+
+#[derive(Clone, Copy)]
+struct Signed {
+    user_id: i64,
+    session_id: Option<i64>,
 }
 
 /// The machine's UTC offset as "+08:00", so the session's dates/times
@@ -53,36 +59,33 @@ impl Db {
         Ok(Self { pool, user: Mutex::new(None) })
     }
 
-    /// Act as a specific user (sign-in, tests).
+    /// Act as a specific user (tests; sign-in uses `start_session`).
+    #[cfg(test)]
     pub fn set_user(&self, user_id: i64) {
-        *self.user.lock().expect("user lock") = Some(user_id);
+        *self.user.lock().expect("user lock") = Some(Signed { user_id, session_id: None });
     }
 
-    /// The current user's id.
+    /// Marks `user_id` as signed in through session `session_id`.
+    pub fn start_session(&self, user_id: i64, session_id: i64) {
+        *self.user.lock().expect("user lock") = Some(Signed { user_id, session_id: Some(session_id) });
+    }
+
+    /// The signed-in user, or an error asking them to sign in.
     pub async fn user_id(&self) -> AppResult<i64> {
-        if let Some(id) = *self.user.lock().expect("user lock") {
-            return Ok(id);
-        }
-        let existing: Option<i64> = sqlx::query_scalar("SELECT id FROM users WHERE account_type = 'student' ORDER BY id LIMIT 1")
-            .fetch_optional(&self.pool)
-            .await?;
-        let id = match existing {
-            Some(id) => id,
-            None => {
-                sqlx::query_scalar(
-                    "INSERT INTO users (email, full_name, display_name)
-                     VALUES ($1, 'Nursing Student', 'Student') RETURNING id",
-                )
-                .bind(DEFAULT_EMAIL)
-                .fetch_one(&self.pool)
-                .await?
-            }
-        };
-        *self.user.lock().expect("user lock") = Some(id);
-        Ok(id)
+        self.current_user().ok_or_else(|| AppError::new(SIGNED_OUT))
     }
 
-    /// Forget the cached user (after the account is deleted).
+    /// The signed-in user, if any.
+    pub fn current_user(&self) -> Option<i64> {
+        self.user.lock().expect("user lock").map(|s| s.user_id)
+    }
+
+    /// The current session row, if signed in through one.
+    pub fn current_session(&self) -> Option<i64> {
+        self.user.lock().expect("user lock").and_then(|s| s.session_id)
+    }
+
+    /// Signs out locally (after sign-out or account deletion).
     pub fn forget_user(&self) {
         *self.user.lock().expect("user lock") = None;
     }

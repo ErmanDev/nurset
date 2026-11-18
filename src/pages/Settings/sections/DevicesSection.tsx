@@ -1,21 +1,44 @@
-import { Monitor } from "lucide-react";
+import { useState } from "react";
+import { api } from "../../../lib/api";
+import { useAsync } from "../../../hooks/useAsync";
 import { SectionHeader } from "./shared";
+import { SessionList } from "./security";
+import { toast } from "../../../components/Toast/Toast";
 
+/** Devices currently signed in to this account. */
 export default function DevicesSection() {
+  const { data, error, reload } = useAsync(api.getSecurity);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function end(id?: number) {
+    setActionError(null);
+    try {
+      await api.endSessions(id);
+      toast.deleted(id ? "Device signed out" : "Other devices signed out", "They'll need to sign in again.");
+      await reload();
+    } catch (err) {
+      setActionError(String(err));
+    }
+  }
+
+  const others = data?.sessions.filter((s) => s.active && !s.current).length ?? 0;
+
   return (
     <div className="st-section">
-      <SectionHeader title="Connected Devices" subtitle="Devices that can access your NurSet workspace." />
-      <div className="st-device">
-        <Monitor size={24} />
+      <SectionHeader title="Connected Devices" subtitle="Devices that are signed in to your NurSet account." />
+      {(error || actionError) && <div className="alert-error">{error ?? actionError}</div>}
+      {!data && !error && <div className="skeleton" style={{ height: 70 }} />}
+      {data && <SessionList sessions={data.sessions} showEnded={false} onEnd={(id) => void end(id)} />}
+      {others > 0 && (
         <div>
-          <strong>This computer</strong>
-          <span>NurSet desktop app · Active now</span>
+          <button className="btn btn-secondary" onClick={() => void end()}>
+            Sign out all other devices
+          </button>
         </div>
-        <span className="badge badge--green">Current device</span>
-      </div>
+      )}
       <p className="st-note">
-        Syncing across devices needs a NurSet account, which isn't available yet. Use Privacy &amp; Security › Data
-        Export to keep a backup copy.
+        Your records live in your NurSet account, so signing in on another computer shows the same data. Uploaded files
+        stay on the computer they were uploaded from.
       </p>
     </div>
   );

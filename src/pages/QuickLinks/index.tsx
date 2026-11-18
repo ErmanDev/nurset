@@ -19,7 +19,7 @@ const features: { to: string; title: string; text: string; icon: LucideIcon; ton
     tone: "purple",
   },
   {
-    to: "/quick-links/announcements",
+    to: "/announcements",
     title: "Announcements",
     text: "Stay updated with school news, important notices, and nursing program events",
     icon: Megaphone,
