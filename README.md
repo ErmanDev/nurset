@@ -78,6 +78,17 @@ pnpm app:build
 The installer is in `src-tauri/target/release/bundle/` (`.msi` and `-setup.exe`).
 It contains no secrets: everything sensitive stays on the server.
 
+### 3. Web app on Vercel
+
+The same frontend runs in the browser (`src/lib/platform.ts` detects it: no
+window buttons, files open in a new tab, exports download in place).
+
+1. Vercel dashboard → **Add New → Project** → import `ErmanDev/nurset`.
+2. Vercel reads `vercel.json` (Vite, `pnpm build`, output `dist`). The server
+   address comes from `.env.production` (`VITE_API_URL`); you can also set it
+   under the project's Environment Variables.
+3. Deploy. Every push to `main` redeploys the site.
+
 ## Structure
 
 ```

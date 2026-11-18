@@ -124,6 +124,7 @@
 /* ---------- form side ---------- */
 
 .auth-main {
+  position: relative;
   display: flex;
   overflow-y: auto;
   padding: 40px 32px;

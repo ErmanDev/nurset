@@ -1,3 +1,5 @@
+import { browserLabel, isDesktop } from "./platform";
+
 // HTTP client for the NurSet server (server/). Every API call goes through
 // `call`, which sends the session token and turns errors into plain strings
 // (the same shape the pages already show with `String(err)`).
@@ -88,19 +90,35 @@ export interface FileLink {
   path: string;
 }
 
-/** Opens a server file link in the default browser (or PDF/image viewer). */
-export async function openLink(link: FileLink): Promise<void> {
-  const url = `${API_URL}${link.path}`;
+/**
+ * Runs an "open" or "export" command and shows the file.
+ * Desktop: opens the link in the default browser or viewer.
+ * Web: a new tab is opened right away (inside the click, so pop-up blockers
+ * allow it) and pointed at the file once the server answers; downloads
+ * (`download: true`) start in the current tab without leaving NurSet.
+ */
+export async function openFrom(getLink: () => Promise<FileLink>, opts: { download?: boolean } = {}): Promise<void> {
+  const tab = !isDesktop && !opts.download ? window.open("about:blank", "_blank") : null;
   try {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
-    await openUrl(url);
-  } catch {
-    window.open(url, "_blank", "noopener"); // not running inside Tauri
+    const url = `${API_URL}${(await getLink()).path}`;
+    if (isDesktop) {
+      const { openUrl } = await import("@tauri-apps/plugin-opener");
+      await openUrl(url);
+    } else if (tab) {
+      tab.opener = null;
+      tab.location.href = url;
+    } else {
+      window.location.href = url; // attachment: the browser downloads it and stays on NurSet
+    }
+  } catch (err) {
+    tab?.close();
+    throw err;
   }
 }
 
-/** This computer's name for Settings > Active Sessions, e.g. "WINTER · Windows desktop app". */
+/** Device label for Settings > Active Sessions. */
 export async function deviceName(): Promise<string> {
+  if (!isDesktop) return browserLabel();
   try {
     const { invoke } = await import("@tauri-apps/api/core");
     return await invoke<string>("device_name");

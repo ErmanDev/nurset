@@ -1,6 +1,7 @@
 import { CalendarDays, ClipboardCheck, Sparkles } from "lucide-react";
 import { Outlet } from "react-router";
 import Logo from "../components/Logo/Logo";
+import WindowControls from "../components/WindowControls/WindowControls";
 import "./AuthLayout.css";
 
 const highlights = [
@@ -43,6 +44,7 @@ export default function AuthLayout() {
       </aside>
 
       <main className="auth-main">
+        <WindowControls className="window-controls--floating" />
         <div className="auth-card">
           <Outlet />
         </div>

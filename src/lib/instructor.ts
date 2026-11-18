@@ -1,6 +1,6 @@
 // Clinical instructor tools: types + typed wrappers for the Rust commands
 // in src-tauri/src/commands/ci_*.rs.
-import { call as invoke, openLink, type FileLink } from "./client";
+import { call as invoke, openFrom, type FileLink } from "./client";
 
 export interface MyStudent {
   studentId: number;
@@ -177,7 +177,7 @@ export const ciApi = {
   listReviews: (status?: string) => invoke<ReviewDocument[]>("list_reviews", { status }),
   reviewDocument: (id: number, status: "under_review" | "approved" | "needs_revision", feedback?: string | null) =>
     invoke<void>("review_document", { id, status, feedback }),
-  openReviewDocument: async (id: number) => openLink(await invoke<FileLink>("open_review_document", { id })),
+  openReviewDocument: (id: number) => openFrom(() => invoke<FileLink>("open_review_document", { id })),
 
   listInstructions: () => invoke<Instruction[]>("list_instructions"),
   createInstruction: (input: InstructionInput) => invoke<Instruction>("create_instruction", { input }),

@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router";
 import Avatar from "../Avatar/Avatar";
 import NotificationBell from "../NotificationBell/NotificationBell";
+import WindowControls from "../WindowControls/WindowControls";
 import type { Profile } from "../../lib/types";
 
 export default function TopBar({ profile }: { profile: Profile | null }) {
@@ -24,6 +25,7 @@ export default function TopBar({ profile }: { profile: Profile | null }) {
       >
         <Avatar profile={profile} size={38} />
       </button>
+      <WindowControls className="window-controls--topbar" />
     </header>
   );
 }

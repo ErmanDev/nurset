@@ -1,5 +1,5 @@
 // Typed wrappers around the NurSet server's commands (server/src/dispatch.rs).
-import { call as invoke, clearToken, deviceName, getToken, openLink, setToken, upload, type FileLink } from "./client";
+import { call as invoke, clearToken, deviceName, getToken, openFrom, setToken, upload, type FileLink } from "./client";
 import type {
   CiDashboard,
   GroupDetail,
@@ -120,7 +120,7 @@ export const api = {
   updateProfile: (input: ProfileInput) => invoke<Profile>("update_profile", { input }),
   setAvatar: (data: string | null) => invoke<Profile>("set_avatar", { data }),
   /** Downloads a JSON copy of all your data (opens in the browser). */
-  exportData: async () => openLink(await invoke<FileLink>("export_data")),
+  exportData: () => openFrom(() => invoke<FileLink>("export_data"), { download: true }),
   /** Wipes all local data. `confirm` must be "DELETE". */
   resetAllData: (confirm: string) => invoke<void>("reset_all_data", { confirm }),
   listReceipts: () => invoke<Receipt[]>("list_receipts"),
@@ -140,7 +140,7 @@ export const api = {
     invoke<Requirement>("add_requirement", { input }),
   listDocuments: () => invoke<SubmittedDocument[]>("list_documents"),
   /** Opens the student's own submitted file in its default app. */
-  openDocument: async (id: number) => openLink(await invoke<FileLink>("open_document", { id })),
+  openDocument: (id: number) => openFrom(() => invoke<FileLink>("open_document", { id })),
   uploadDocument: async (file: File, details: DocumentUploadDetails) =>
     upload<SubmittedDocument>("/api/upload/document", await packUpload(file, details)),
 
@@ -182,7 +182,7 @@ export const api = {
   setMaterialBookmark: (id: number, bookmarked: boolean) =>
     invoke<Material>("set_material_bookmark", { id, bookmarked }),
   /** Opens the file in the default app (and logs a study session). */
-  openMaterial: async (id: number) => openLink(await invoke<FileLink>("open_material", { id })),
+  openMaterial: (id: number) => openFrom(() => invoke<FileLink>("open_material", { id })),
   getHandbook: () => invoke<Material | null>("get_handbook"),
   listAnnouncements: () => invoke<Announcement[]>("list_announcements"),
   getStudyJourney: () => invoke<StudyJourney>("get_study_journey"),
