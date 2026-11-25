@@ -36,7 +36,7 @@ export default function Login() {
 
   function validate(): FieldErrors<Field> {
     const next: FieldErrors<Field> = {};
-    if (!identifier.trim()) next.identifier = "Enter your email or student ID.";
+    if (!identifier.trim()) next.identifier = "Enter your clinical instructor or student email.";
     if (!password) next.password = "Enter your password.";
     return next;
   }
@@ -69,7 +69,7 @@ export default function Login() {
 
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         <TextField
-          label="Email or student ID"
+          label="CI email or student email"
           icon={Mail}
           placeholder="you@school.edu"
           autoComplete="username"
