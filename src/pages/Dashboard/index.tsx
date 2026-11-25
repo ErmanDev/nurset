@@ -8,6 +8,7 @@ import DutyBagCard from "./components/DutyBagCard";
 import WeeklyProgressCard from "./components/WeeklyProgressCard";
 import CiReminderCard from "./components/CiReminderCard";
 import AiStudyBanner from "./components/AiStudyBanner";
+import GroupInvitations from "./components/GroupInvitations";
 import { toast } from "../../components/Toast/Toast";
 import "./Dashboard.css";
 
@@ -47,6 +48,8 @@ export default function Dashboard() {
       </header>
 
       {error && <div className="alert-error">Couldn't load your dashboard: {error}</div>}
+
+      <GroupInvitations onAccepted={() => void reload()} />
 
       {!data && !error ? (
         <DashboardSkeleton />

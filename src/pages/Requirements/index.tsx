@@ -52,7 +52,7 @@ export default function Requirements() {
           <div>
             <strong>No clinical instructor yet</strong>
             <span>
-              Your uploads are saved, but no instructor can review them until one adds you to their clinical group. Give
+              Your uploads are saved, but no instructor can review them until you join their clinical group (accept their invitation on Home). Give
               your instructor your email{profile?.studentId ? " or student ID" : ""}
               {profile?.email ? ` (${profile.email}${profile.studentId ? ` · ${profile.studentId}` : ""})` : ""}.
             </span>

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
-import { ArrowRight, GraduationCap, IdCard, Lock, Mail, School, User } from "lucide-react";
+import { ArrowRight, GraduationCap, IdCard, Lock, Mail, School, Stethoscope, User } from "lucide-react";
 import { SelectField, TextField } from "../../components/TextField/TextField";
 import { isEmail, MIN_PASSWORD_LENGTH, passwordStrength, type FieldErrors } from "./validation";
 import { api } from "../../lib/api";
@@ -30,6 +30,8 @@ export default function Register() {
   const navigate = useNavigate();
   const { reload: reloadPreferences } = usePreferences();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [accountType, setAccountType] = useState<"student" | "clinical_instructor">("student");
+  const isInstructor = accountType === "clinical_instructor";
   const [legal, setLegal] = useState<LegalKind | null>(null);
   const [values, setValues] = useState(initialValues);
   const [agree, setAgree] = useState(false);
@@ -50,7 +52,7 @@ export default function Register() {
     if (!values.email.trim()) next.email = "Enter your email.";
     else if (!isEmail(values.email)) next.email = "Enter a valid email address.";
     if (!values.school.trim()) next.school = "Enter your school.";
-    if (!values.yearLevel) next.yearLevel = "Select your year level.";
+    if (!isInstructor && !values.yearLevel) next.yearLevel = "Select your year level.";
     if (values.password.length < MIN_PASSWORD_LENGTH)
       next.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
     if (!values.confirmPassword) next.confirmPassword = "Re-enter your password.";
@@ -70,19 +72,20 @@ export default function Register() {
     setServerError(null);
     try {
       await api.register({
+        accountType,
         firstName: values.firstName,
         middleName: values.middleName.trim() || null,
         lastName: values.lastName,
         email: values.email,
         password: values.password,
         university: values.school,
-        yearLevel: values.yearLevel,
-        studentId: values.studentId.trim() || null,
+        yearLevel: isInstructor ? null : values.yearLevel,
+        studentId: isInstructor ? null : values.studentId.trim() || null,
         remember: true,
       });
       await reloadPreferences();
       toast.created("Account created", `Welcome to NurSet, ${values.firstName.trim()}!`);
-      navigate("/", { replace: true });
+      navigate(isInstructor ? "/ci" : "/", { replace: true });
     } catch (err) {
       const message = String(err);
       if (message.includes("email")) setErrors({ email: message });
@@ -100,6 +103,33 @@ export default function Register() {
 
       <form className="auth-form" onSubmit={handleSubmit} noValidate>
         {serverError && <div className="alert-error">{serverError}</div>}
+        <div className="field">
+          <span className="field-label">Register as</span>
+          <div className="auth-role" role="radiogroup" aria-label="Register as">
+            {(
+              [
+                ["student", GraduationCap, "Nursing Student", "Track duties, requirements, and studies"],
+                ["clinical_instructor", Stethoscope, "Clinical Instructor", "Guide and evaluate a clinical group"],
+              ] as const
+            ).map(([value, Icon, title, text]) => (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={accountType === value}
+                className={`auth-role-option${accountType === value ? " is-active" : ""}`}
+                onClick={() => setAccountType(value)}
+              >
+                <Icon size={18} />
+                <span>
+                  <strong>{title}</strong>
+                  <small>{text}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <TextField
           label="First name"
           icon={User}
@@ -141,9 +171,9 @@ export default function Register() {
           onChange={(e) => update("email", e.target.value)}
         />
 
-        <div className="auth-row">
+        <div className={isInstructor ? undefined : "auth-row"}>
           <TextField
-            label="School"
+            label={isInstructor ? "School / institution" : "School"}
             icon={School}
             placeholder="Your nursing school"
             autoComplete="organization"
@@ -151,6 +181,7 @@ export default function Register() {
             error={errors.school}
             onChange={(e) => update("school", e.target.value)}
           />
+          {!isInstructor && (
           <SelectField
             label="Year level"
             icon={GraduationCap}
@@ -161,8 +192,10 @@ export default function Register() {
             error={errors.yearLevel}
             onChange={(e) => update("yearLevel", e.target.value)}
           />
+          )}
         </div>
 
+        {!isInstructor && (
         <TextField
           label="Student ID (optional)"
           icon={IdCard}
@@ -172,6 +205,7 @@ export default function Register() {
           error={errors.studentId}
           onChange={(e) => update("studentId", e.target.value)}
         />
+        )}
 
         <TextField
           label="Password"

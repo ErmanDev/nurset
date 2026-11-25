@@ -81,7 +81,19 @@ async fn instructor_tools_reach_students() {
     .unwrap();
     assert_eq!((req.total, req.submitted), (2, 0));
     let detail = instructor::add_group_member(st(), group.id, s3_email.clone()).await.unwrap();
-    assert_eq!(detail.members.len(), 3);
+    assert_eq!((detail.members.len(), detail.invitations.len()), (2, 1));
+    // Pending: no group work yet, and the instructor can't reach the student.
+    as_user(s3);
+    assert!(duties::list_duties(st()).await.unwrap().is_empty(), "nothing before accepting");
+    // Declining removes the invitation; a new invite can then be accepted.
+    invitations::respond_group_invitation(st(), group.id, false).await.unwrap();
+    as_user(ci);
+    assert!(instructor::get_group(st(), group.id).await.unwrap().invitations.is_empty());
+    instructor::add_group_member(st(), group.id, s3_email.clone()).await.unwrap();
+    as_user(s3);
+    invitations::respond_group_invitation(st(), group.id, true).await.unwrap();
+    as_user(ci);
+    assert_eq!(instructor::get_group(st(), group.id).await.unwrap().members.len(), 3);
     as_user(s3);
     assert_eq!(duties::list_duties(st()).await.unwrap().len(), 2, "gets today's and tomorrow's duties");
     assert_eq!(requirements::list_requirements(st()).await.unwrap().len(), 1, "gets open requirement");

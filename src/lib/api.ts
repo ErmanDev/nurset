@@ -3,6 +3,7 @@ import { call as invoke, clearToken, deviceName, getToken, openFrom, setToken, u
 import type {
   CiDashboard,
   GroupDetail,
+  GroupInvitation,
   GroupInput,
   GroupSummary,
   PaymentMethod,
@@ -109,6 +110,10 @@ export const api = {
   deleteGroup: (id: number) => invoke<void>("delete_group", { id }),
   addGroupMember: (groupId: number, identifier: string) =>
     invoke<GroupDetail>("add_group_member", { groupId, identifier }),
+  /** Student side: invitations to join an instructor's group. */
+  listGroupInvitations: () => invoke<GroupInvitation[]>("list_group_invitations"),
+  respondGroupInvitation: (groupId: number, accept: boolean) =>
+    invoke<void>("respond_group_invitation", { groupId, accept }),
   removeGroupMember: (groupId: number, studentId: number) =>
     invoke<GroupDetail>("remove_group_member", { groupId, studentId }),
   getProfile: () => invoke<Profile | null>("get_profile"),

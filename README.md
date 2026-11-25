@@ -32,9 +32,10 @@ cp server/.env.example server/.env   # add GEMINI_API_KEY for AI Study (optional
 pnpm app                             # database (Docker) + API server + desktop window
 ```
 
-`pnpm app` runs `pnpm db:up`, then the server (`pnpm server`, port 8080) and
-`tauri dev` side by side. Students sign up on the Register screen; instructor
-accounts are created with `pnpm db:create-instructor` (see `database/README.md`).
+`pnpm app` runs `pnpm db:up`, then the server (`pnpm server`) and `tauri dev`
+side by side. On Register, people choose Nursing Student or Clinical Instructor.
+An instructor invites students to a group by email or student ID; the student
+must accept before the instructor can see any of their records.
 
 Tests (from `server/`, database running):
 
@@ -54,7 +55,7 @@ cargo test gemini -- --ignored --nocapture      # live Gemini checks (uses your 
 3. Enter `GEMINI_API_KEY` when Render asks (leave empty to run without AI).
 4. Wait for the deploy, then open `https://<service>.onrender.com/health`.
    It should show `{"ok":true,...}`. The schema is created automatically.
-5. Create the clinical instructor account(s). Copy the database's
+5. Optional: instructors can register in the app, or you can create them. Copy the database's
    **External Database URL** into `database/postgres/.env` as `DATABASE_URL`, then:
 
    ```sh

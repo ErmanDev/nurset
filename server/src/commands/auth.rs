@@ -164,10 +164,14 @@ pub struct RegisterInput {
     /// Device label for Active Sessions, e.g. "WINTER · Windows desktop app".
     #[serde(default)]
     pub device: Option<String>,
+    /// "student" (default) or "clinical_instructor".
+    #[serde(default)]
+    pub account_type: Option<String>,
 }
 
-/// Creates a nursing-student account and signs it in. Clinical instructor
-/// accounts are created by an administrator (`pnpm db:create-instructor`).
+/// Creates a nursing-student or clinical-instructor account and signs it in.
+/// Instructors only see a student's records after the student accepts their
+/// group invitation (see `invitations`).
 pub async fn register(db: &Db, input: RegisterInput) -> AppResult<SignedIn> {
     let first_name = required_text(&input.first_name, "First name")?;
     let last_name = required_text(&input.last_name, "Last name")?;
@@ -184,20 +188,33 @@ pub async fn register(db: &Db, input: RegisterInput) -> AppResult<SignedIn> {
     }
     check_new_password(&input.password)?;
     let display_name = first_name;
+    let instructor = match input.account_type.as_deref().unwrap_or("student") {
+        "student" => false,
+        "clinical_instructor" => true,
+        _ => return Err(AppError::new("Choose Nursing Student or Clinical Instructor")),
+    };
+    // Year level and student ID only apply to students.
+    let (role, year_level, student_number) = if instructor {
+        ("Clinical Instructor", None, None)
+    } else {
+        ("Nursing Student", optional_text(input.year_level), optional_text(input.student_id))
+    };
     let hash = hash_password(input.password).await?;
 
     let result = sqlx::query_scalar::<_, i64>(
         "INSERT INTO users (email, password_hash, password_changed_at, full_name, display_name,
                             university, year_level, student_id, account_type, role)
-         VALUES ($1, $2, now(), $3, $4, $5, $6, $7, 'student', 'Nursing Student') RETURNING id",
+         VALUES ($1, $2, now(), $3, $4, $5, $6, $7, $8, $9) RETURNING id",
     )
     .bind(&email)
     .bind(hash)
     .bind(&full_name)
     .bind(display_name)
     .bind(optional_text(input.university))
-    .bind(optional_text(input.year_level))
-    .bind(optional_text(input.student_id))
+    .bind(year_level)
+    .bind(student_number)
+    .bind(if instructor { "clinical_instructor" } else { "student" })
+    .bind(role)
     .fetch_one(&db.pool)
     .await;
     let uid = match result {

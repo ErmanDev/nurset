@@ -117,14 +117,41 @@ export default function GroupDetail() {
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search students…" aria-label="Search students" />
           </label>
           <button className="btn btn-primary" onClick={() => setAdding(true)}>
-            <UserPlus size={15} /> Add student
+            <UserPlus size={15} /> Invite student
           </button>
         </div>
 
         {error && <div className="alert-error">{error}</div>}
 
+        {detail.invitations.length > 0 && (
+          <ul className="ci-invites" aria-label="Invited students">
+            {detail.invitations.map((inv) => (
+              <li key={inv.studentId}>
+                <span className="badge badge--amber">Invited</span>
+                <span className="ci-invite-email">{inv.email}</span>
+                <small>Waiting for the student to accept</small>
+                <button
+                  className="text-link"
+                  onClick={async () => {
+                    try {
+                      setDetail(await api.removeGroupMember(groupId, inv.studentId));
+                      toast.deleted("Invitation cancelled", inv.email);
+                    } catch (err) {
+                      setError(String(err));
+                    }
+                  }}
+                >
+                  Cancel
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {members.length === 0 ? (
-          <p className="empty-text ci-members-empty">No students yet. Add them by email or student ID.</p>
+          <p className="empty-text ci-members-empty">
+            No students yet. Invite them by email or student ID; they join once they accept.
+          </p>
         ) : visible.length === 0 ? (
           <p className="empty-text ci-members-empty">No students match “{query}”.</p>
         ) : (
@@ -200,7 +227,7 @@ export default function GroupDetail() {
           onAdd={async (identifier) => {
             const updated = await api.addGroupMember(groupId, identifier);
             setDetail(updated);
-            toast.created("Student added", `${identifier.trim()} joined ${updated.group.name}.`);
+            toast.created("Invitation sent", `${identifier.trim()} will join ${updated.group.name} after accepting.`);
             setAdding(false);
           }}
         />
@@ -272,7 +299,7 @@ function AddStudentModal({
       open
       onClose={onClose}
       eyebrow={groupName}
-      title="Add Student"
+      title="Invite Student"
       width={440}
       footer={
         <>
@@ -280,7 +307,7 @@ function AddStudentModal({
             Cancel
           </button>
           <button type="submit" form="add-student-form" className="btn btn-primary" disabled={saving}>
-            {saving ? "Adding…" : "Add to group"}
+            {saving ? "Sending…" : "Send invitation"}
           </button>
         </>
       }
@@ -292,7 +319,7 @@ function AddStudentModal({
           autoFocus
           value={identifier}
           error={fieldError}
-          hint="The student needs a NurSet account first."
+          hint="The student needs a NurSet account. They'll see the invitation on their Home page and join once they accept."
           onChange={(e) => {
             setIdentifier(e.target.value);
             setFieldError(undefined);

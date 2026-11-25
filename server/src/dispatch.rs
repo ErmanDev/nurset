@@ -20,7 +20,7 @@ fn out<T: Serialize>(result: AppResult<T>) -> AppResult<Value> {
 }
 
 /// Number of commands available over `/api/rpc/<name>`.
-pub const COMMAND_COUNT: usize = 96;
+pub const COMMAND_COUNT: usize = 98;
 
 /// Error text for a command name that doesn't exist (sent as HTTP 404).
 pub const UNKNOWN_COMMAND: &str = "Unknown command";
@@ -46,6 +46,8 @@ pub async fn call(db: &Db, name: &str, args: Value) -> AppResult<Value> {
         "delete_group" => out(commands::instructor::delete_group(db, arg(&mut a, "id")?).await),
         "add_group_member" => out(commands::instructor::add_group_member(db, arg(&mut a, "groupId")?, arg(&mut a, "identifier")?).await),
         "remove_group_member" => out(commands::instructor::remove_group_member(db, arg(&mut a, "groupId")?, arg(&mut a, "studentId")?).await),
+        "list_group_invitations" => out(commands::invitations::list_group_invitations(db).await),
+        "respond_group_invitation" => out(commands::invitations::respond_group_invitation(db, arg(&mut a, "groupId")?, arg(&mut a, "accept")?).await),
         "list_my_students" => out(commands::instructor::list_my_students(db).await),
         "list_duty_assignments" => out(commands::ci_assignments::list_duty_assignments(db).await),
         "create_duty_assignment" => out(commands::ci_assignments::create_duty_assignment(db, arg(&mut a, "input")?).await),

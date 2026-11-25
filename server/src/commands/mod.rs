@@ -9,6 +9,7 @@ pub mod ci_duty_day;
 pub mod ci_instructions;
 pub mod ci_reviews;
 pub mod instructor;
+pub mod invitations;
 pub mod notifications;
 pub mod ci_notes;
 pub mod dashboard;

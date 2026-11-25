@@ -269,3 +269,51 @@
 .fp-done .auth-submit {
   align-self: stretch;
 }
+
+/* ---------- register: role choice ---------- */
+
+.auth-role {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-role-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.auth-role-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.auth-role-option strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.auth-role-option small {
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+.auth-role-option.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-strong);
+}
+
+@media (max-width: 420px) {
+  .auth-role {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

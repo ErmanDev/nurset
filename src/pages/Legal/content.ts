@@ -36,7 +36,7 @@ export const TERMS: LegalDoc = {
       heading: "1. Who can use NurSet",
       body: [
         `${app} is for nursing students and clinical instructors. You must be at least 18 years old, or have the consent of a parent or guardian, to create an account.`,
-        "Student accounts are created by signing up in the app. Clinical instructor accounts are created by an administrator of your school or of NurSet and may only be used by the instructor they were issued to.",
+        "You choose Nursing Student or Clinical Instructor when you sign up. Only register as a clinical instructor if you are one; we may close instructor accounts that aren't genuine.",
       ],
     },
     {
@@ -69,7 +69,7 @@ export const TERMS: LegalDoc = {
     {
       heading: "5. Clinical groups and instructors",
       body: [
-        "When a clinical instructor adds you to a group, they can see the information described in our Privacy Policy (for example your name, duty schedule, readiness checks, documents you submit, attendance, evaluations, and confirmed hours) so they can supervise your clinical rotation.",
+        "A clinical instructor can invite you to their group, and you choose whether to accept. Once you accept, they can see the information described in our Privacy Policy (for example your name, duty schedule, readiness checks, documents you submit, attendance, evaluations, and confirmed hours) so they can supervise your clinical rotation.",
         "Clinical instructors agree to use student information only for teaching, supervision, and evaluation, to keep it confidential, and to follow their school's policies. Evaluations and confirmed hours recorded in NurSet don't replace your school's official records unless your school says so.",
       ],
     },

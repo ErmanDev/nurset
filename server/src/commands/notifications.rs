@@ -48,9 +48,17 @@ pub struct NotificationFeed {
 /// Each source yields (key, category, kind, title, body, link, at timestamptz).
 /// `$1` = user id, `$2` = window in days.
 const STUDENT_SOURCES: &str = concat!(
+    // An instructor invited the student to a group.
+    "SELECT 'invite:' || m.group_id AS key, 'assigned' AS category, 'invitation' AS kind,
+            'Group invitation' AS title,
+            u.full_name || ' invited you to ' || g.name || '. Accept it on your Home page.' AS body,
+            '/' AS link, m.added_at AS at
+     FROM group_memberships m JOIN clinical_groups g ON g.id = m.group_id JOIN users u ON u.id = g.instructor_id
+     WHERE m.student_id = $1 AND m.status = 'pending'
+     UNION ALL ",
     // A CI assigned a duty.
-    "SELECT 'duty-assigned:' || d.id AS key, 'assigned' AS category, 'duty' AS kind,
-            'New duty assigned' AS title,
+    "SELECT 'duty-assigned:' || d.id, 'assigned', 'duty',
+            'New duty assigned',
             d.area || ' · ' || d.hospital || ' on ' || to_char(d.duty_date, 'Dy, Mon FMDD') AS body,
             '/duty-schedule' AS link, d.created_at AS at
      FROM duties d

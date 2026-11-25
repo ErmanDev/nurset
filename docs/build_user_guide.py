@@ -145,7 +145,7 @@ class FlowDiagram(Flowable):
 
     STEPS = [
         ("s", "Registers, then gives the instructor their email or student ID"),
-        ("c", "Creates a clinical group and adds the student"),
+        ("c", "Creates a group and invites the student"),
         ("c", "Assigns duties and requirements, sends instructions and announcements"),
         ("s", "Sees them in Duty Schedule, Requirements, CI Notes, Announcements, and the bell"),
         ("s", "Uploads documents and prepares with the Duty Checklist"),
@@ -376,7 +376,7 @@ story += [
     P("Two kinds of accounts", h2),
     table([
         ["", "Nursing Student", "Clinical Instructor"],
-        ["How to get one", "Sign up on the <b>Register</b> screen.", "Created by your school or NurSet administrator (students can't create instructor accounts)."],
+        ["How to get one", "Sign up on the <b>Register</b> screen.", "Sign up on <b>Register</b> and choose <b>Clinical Instructor</b>."],
         ["Signs in with", "Email or student ID + password", "Email + password"],
         ["Lands on", "Home: next duty, tasks, deadlines, study tools", "Instructor Home: groups, today's duties, documents to review"],
         ["Main job in NurSet", "Prepare for duty, submit requirements, follow instructions, track progress", "Organize groups, assign work, review documents, take attendance, evaluate"],
@@ -398,8 +398,8 @@ story += chapter(
 story += [
     Callout("The one link that makes it all work",
             "A student only receives duties, requirements, instructions, and group announcements, and the instructor "
-            "only sees that student's documents, readiness, and progress, <b>after the instructor adds the student to a "
-            "clinical group</b> (My Groups &gt; Add student, using the student's email or student ID).",
+            "only sees that student's documents, readiness, and progress, <b>after the instructor invites the student to a "
+            "clinical group and the student accepts</b> (My Groups &gt; Invite student; the student taps Accept on Home).",
             fill=AMBER_SOFT, accent=AMBER),
     Spacer(1, 2),
     P("Nursing students: create your account", h2),
@@ -407,10 +407,10 @@ story += [
         ("Open NurSet and choose Create an account", "On the sign-in screen, click <b>Create an account</b>."),
         ("Fill in your details", "First name, middle name (optional), last name, email, school, year level, and student ID (optional, but it lets your instructor find you and you can sign in with it)."),
         ("Choose a password", "At least 8 characters. Read and accept the Terms of Use and Privacy Policy (click the links to open them)."),
-        ("Give your instructor your email or student ID", "Until your instructor adds you to their clinical group, they can't see your uploads, and the Requirements page shows a <i>No clinical instructor yet</i> notice."),
+        ("Give your instructor your email or student ID, then accept", "Your instructor invites you; tap <b>Accept</b> on your Home page. Until you join their group, they can't see your uploads, and the Requirements page shows a <i>No clinical instructor yet</i> notice."),
     ]),
-    P("Clinical instructors: sign in", h2),
-    P("Your administrator creates your account and gives you your email and a temporary password. After signing in, change it in "
+    P("Clinical instructors: create your account", h2),
+    P("On <b>Register</b>, choose <b>Clinical Instructor</b> (no year level or student ID needed). To change your password later, go to "
       + menu("Settings &gt; Privacy &amp; Security &gt; Change Password") + " and update your name and school in " + menu("Settings &gt; Account") + "."),
     P("Signing in and out", h2),
     P("&bull; <b>Keep me signed in</b> (ticked) keeps you signed in on this computer for 30 days, even after you close NurSet. "
@@ -443,7 +443,8 @@ story += [
     P("Set up your groups (start here)", h2),
     Steps([
         ("Create a group", menu("My Groups &gt; New Group") + ". Give it a name (e.g. <i>BSN 3-A &middot; Group 1</i>), and optionally the area, hospital, term, and a color."),
-        ("Add students", "Open the group and add each student by <b>email or student ID</b>. They must have registered first. "
+        ("Invite students", "Open the group and invite each student by <b>email or student ID</b>. They must have registered first and "
+                             "join when they tap <b>Accept</b>; until then they show as Invited. "
                          "New members automatically receive the group's upcoming duties and open requirements."),
         ("Keep it tidy", "Remove students who change groups; edit or delete the group from its page."),
     ], color=TEAL),
@@ -630,7 +631,7 @@ story += [
     P("Quick fixes for the most common questions.", lead),
     table([
         ["Problem", "What to do"],
-        ["Instructor doesn't see a student's documents", "The student isn't in the instructor's group yet. Add them in My Groups using their email or student ID."],
+        ["Instructor doesn't see a student's documents", "The student hasn't joined yet. Invite them in My Groups; they must tap Accept on their Home page."],
         ["Student doesn't get duties or requirements", "Same cause: they must be in the group. Students added later automatically receive upcoming duties and open requirements."],
         ["\"Incorrect email, student ID, or password\"", "Check the spelling and Caps Lock. Instructors sign in with email. If it still fails, ask the administrator to reset the password."],
         ["\"Can't reach the NurSet server\"", "NurSet needs the internet. Check your connection and try again. If no one used NurSet for a while, the server can take up to a minute to wake up."],

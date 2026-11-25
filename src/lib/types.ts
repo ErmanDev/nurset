@@ -393,6 +393,20 @@ export interface GroupMember {
 export interface GroupDetail {
   group: GroupSummary;
   members: GroupMember[];
+  /** Invited students who haven't accepted yet (email only). */
+  invitations: { studentId: number; email: string; invitedAt: string }[];
+}
+
+/** A clinical group invitation waiting for the student to accept. */
+export interface GroupInvitation {
+  groupId: number;
+  groupName: string;
+  area: string | null;
+  hospital: string | null;
+  term: string | null;
+  instructorName: string;
+  instructorEmail: string;
+  invitedAt: string;
 }
 
 export interface GroupInput {
@@ -431,6 +445,7 @@ export interface CiDashboard {
 // ---------- accounts & sessions ----------
 
 export interface RegisterInput {
+  accountType: "student" | "clinical_instructor";
   firstName: string;
   middleName: string | null;
   lastName: string;
@@ -470,7 +485,8 @@ export type NotificationKind =
   | "material"
   | "study"
   | "attendance"
-  | "evaluation";
+  | "evaluation"
+  | "invitation";
 
 export interface AppNotification {
   key: string;

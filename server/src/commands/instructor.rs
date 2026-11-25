@@ -74,6 +74,16 @@ pub struct GroupMember {
 pub struct GroupDetail {
     pub group: GroupSummary,
     pub members: Vec<GroupMember>,
+    /// Students invited but not yet accepted (only their email is shown).
+    pub invitations: Vec<PendingInvite>,
+}
+
+#[derive(Debug, Serialize, FromRow)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingInvite {
+    pub student_id: i64,
+    pub email: String,
+    pub invited_at: String,
 }
 
 #[derive(Debug, Serialize, FromRow)]
@@ -368,7 +378,15 @@ pub async fn get_group(db: &Db, id: i64) -> AppResult<GroupDetail> {
     .bind(iso(today()))
     .fetch_all(&db.pool)
     .await?;
-    Ok(GroupDetail { group, members })
+    let invitations = sqlx::query_as::<_, PendingInvite>(concat!(
+        "SELECT m.student_id, u.email::text AS email, ", ts!("m.added_at"), " AS invited_at
+         FROM group_memberships m JOIN users u ON u.id = m.student_id
+         WHERE m.group_id = $1 AND m.status = 'pending' ORDER BY m.added_at DESC"
+    ))
+    .bind(id)
+    .fetch_all(&db.pool)
+    .await?;
+    Ok(GroupDetail { group, members, invitations })
 }
 pub async fn create_group(db: &Db, input: GroupInput) -> AppResult<GroupSummary> {
     let g = input.validate()?;
@@ -427,7 +445,8 @@ pub async fn delete_group(db: &Db, id: i64) -> AppResult<()> {
     Ok(())
 }
 
-/// Adds a student by email or student ID.
+/// Invites a student (by email or student ID) to the group. The student
+/// must accept before the instructor can see any of their records.
 pub async fn add_group_member(db: &Db, group_id: i64, identifier: String) -> AppResult<GroupDetail> {
     let identifier = required_text(&identifier, "Email or student ID")?;
     let ci = instructor_id(&db).await?;
@@ -443,18 +462,27 @@ pub async fn add_group_member(db: &Db, group_id: i64, identifier: String) -> App
         Some((_, kind)) if kind != "student" => return Err(AppError::new("That account isn't a student account")),
         Some((id, _)) => id,
     };
-    let added = sqlx::query(
-        "INSERT INTO group_members (group_id, student_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-    )
-    .bind(group_id)
-    .bind(student_id)
-    .execute(&db.pool)
-    .await?
-    .rows_affected();
-    if added == 0 {
-        return Err(AppError::new("That student is already in this group"));
+    let existing: Option<String> =
+        sqlx::query_scalar("SELECT status FROM group_memberships WHERE group_id = $1 AND student_id = $2")
+            .bind(group_id)
+            .bind(student_id)
+            .fetch_optional(&db.pool)
+            .await?;
+    match existing.as_deref() {
+        Some("active") => return Err(AppError::new("That student is already in this group")),
+        Some(_) => return Err(AppError::new("That student has already been invited")),
+        None => {}
     }
-    // Give the new member the group's upcoming duties and open requirements.
+    sqlx::query("INSERT INTO group_memberships (group_id, student_id, status) VALUES ($1, $2, 'pending')")
+        .bind(group_id)
+        .bind(student_id)
+        .execute(&db.pool)
+        .await?;
+    get_group(db, group_id).await
+}
+
+/// Gives a student who just joined the group its upcoming duties and open requirements.
+pub(crate) async fn give_group_work(pool: &PgPool, group_id: i64, student_id: i64) -> AppResult<()> {
     sqlx::query(
         "INSERT INTO duties (user_id, area, hospital, location, duty_date, start_time, end_time,
                              clinical_instructor, notes, assignment_id)
@@ -464,7 +492,7 @@ pub async fn add_group_member(db: &Db, group_id: i64, identifier: String) -> App
     )
     .bind(group_id)
     .bind(student_id)
-    .execute(&db.pool)
+    .execute(pool)
     .await?;
     sqlx::query(
         "INSERT INTO requirements (user_id, title, description, due_date, assignment_id)
@@ -473,9 +501,9 @@ pub async fn add_group_member(db: &Db, group_id: i64, identifier: String) -> App
     )
     .bind(group_id)
     .bind(student_id)
-    .execute(&db.pool)
+    .execute(pool)
     .await?;
-    get_group(db, group_id).await
+    Ok(())
 }
 
 /// The instructor's display name (stored on the copies they create).
@@ -538,7 +566,7 @@ pub async fn list_my_students(db: &Db) -> AppResult<Vec<MyStudent>> {
 pub async fn remove_group_member(db: &Db, group_id: i64, student_id: i64) -> AppResult<GroupDetail> {
     let ci = instructor_id(&db).await?;
     group_summary(&db.pool, ci, group_id).await?;
-    sqlx::query("DELETE FROM group_members WHERE group_id = $1 AND student_id = $2")
+    sqlx::query("DELETE FROM group_memberships WHERE group_id = $1 AND student_id = $2")
         .bind(group_id)
         .bind(student_id)
         .execute(&db.pool)

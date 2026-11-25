@@ -15,6 +15,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  UserPlus,
   type LucideIcon,
 } from "lucide-react";
 import { api } from "../../lib/api";
@@ -36,6 +37,7 @@ const KIND: Record<NotificationKind, { icon: LucideIcon; tone: string }> = {
   study: { icon: Sparkles, tone: "purple" },
   attendance: { icon: ClipboardCheck, tone: "blue" },
   evaluation: { icon: Star, tone: "amber" },
+  invitation: { icon: UserPlus, tone: "green" },
 };
 
 /** "Just now", "5m ago", "3h ago", "Today", "Yesterday", "Nov 12". */

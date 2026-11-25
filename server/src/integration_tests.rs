@@ -333,8 +333,29 @@ async fn instructor_home_and_groups() {
 
     assert!(instructor::add_group_member(st(), group.id, "nobody@nowhere.test".into()).await.is_err());
     assert!(instructor::add_group_member(st(), group.id, ci_email.clone()).await.is_err(), "not a student");
-    let detail = instructor::add_group_member(st(), group.id, format!("T-{nanos}")).await.unwrap(); // by student ID
-    assert_eq!(detail.members.len(), 1);
+    // Inviting doesn't reveal anything until the student accepts.
+    let invited = instructor::add_group_member(st(), group.id, format!("T-{nanos}")).await.unwrap(); // by student ID
+    assert!(invited.members.is_empty(), "pending student isn't a member yet");
+    assert_eq!(invited.invitations.len(), 1);
+    assert_eq!(invited.invitations[0].email, student_email.to_lowercase());
+    assert!(instructor::add_group_member(st(), group.id, student_email.clone()).await.is_err(), "already invited");
+    assert_eq!(instructor::get_ci_dashboard(st()).await.unwrap().stats.students, 0);
+    assert!(instructor::list_my_students(st()).await.unwrap().is_empty());
+
+    // The student sees the invitation and accepts it.
+    st().set_user(student);
+    let invites = invitations::list_group_invitations(st()).await.unwrap();
+    assert_eq!(invites.len(), 1);
+    assert_eq!(invites[0].instructor_name, "Test CI");
+    let bell = notifications::list_notifications(st()).await.unwrap();
+    assert!(bell.items.iter().any(|n| n.kind == "invitation"));
+    invitations::respond_group_invitation(st(), group.id, true).await.unwrap();
+    assert!(invitations::list_group_invitations(st()).await.unwrap().is_empty());
+    assert!(invitations::respond_group_invitation(st(), group.id, true).await.is_err(), "already accepted");
+    st().set_user(ci);
+
+    let detail = instructor::get_group(st(), group.id).await.unwrap();
+    assert_eq!((detail.members.len(), detail.invitations.len()), (1, 0));
     let m = &detail.members[0];
     assert_eq!((m.readiness_done, m.overdue_tasks, m.pending_reviews), (1, 1, 1));
     assert!(instructor::add_group_member(st(), group.id, student_email.clone()).await.is_err(), "already in group");

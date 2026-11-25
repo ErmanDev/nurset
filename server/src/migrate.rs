@@ -19,6 +19,7 @@ const MIGRATIONS: &[(&str, &str)] = &[
     ("0006_quiz_source.sql", include_str!("../../database/postgres/migrations/0006_quiz_source.sql")),
     ("0007_quiz_feedback.sql", include_str!("../../database/postgres/migrations/0007_quiz_feedback.sql")),
     ("0008_stored_files.sql", include_str!("../../database/postgres/migrations/0008_stored_files.sql")),
+    ("0009_group_invitations.sql", include_str!("../../database/postgres/migrations/0009_group_invitations.sql")),
 ];
 
 /// Arbitrary constant identifying NurSet's migration lock.

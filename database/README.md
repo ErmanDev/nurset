@@ -17,8 +17,12 @@ the `stored_files` table.
 
 ## Accounts
 
+Group membership: `group_memberships` (status `pending` until the student
+accepts, then `active`); `group_members` is a view of accepted memberships only.
+
 - **Nursing students** sign up on the app's Register screen.
-- **Clinical instructors** are created by an administrator:
+- **Clinical instructors** also sign up on Register (choosing "Clinical Instructor"),
+  or an administrator can create them:
 
   ```sh
   pnpm db:create-instructor --email ci@school.edu --name "Angela Reyes, RN" --password "…"

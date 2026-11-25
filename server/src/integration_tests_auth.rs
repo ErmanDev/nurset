@@ -92,7 +92,20 @@ async fn register_sign_in_and_sessions() {
     assert!(auth::sign_in(&anon, email.clone(), "first-pass-1".into(), Some(false), None).await.is_err());
     auth::sign_in(&anon, email.clone(), "second-pass-2".into(), Some(false), None).await.unwrap();
 
-    sqlx::query("DELETE FROM users WHERE id = $1").bind(uid).execute(&pool).await.unwrap();
+    // Clinical instructors can register themselves; student-only fields are dropped.
+    let mut ci_input = register_input(&format!("test-{nanos}-ci-reg@nurset.local"), "ci-pass-1234");
+    ci_input.account_type = Some("clinical_instructor".into());
+    ci_input.year_level = Some("4th Year".into());
+    let ci = auth::register(&request(&pool, None).await, ci_input).await.unwrap().profile;
+    assert_eq!((ci.account_type.as_str(), ci.role.as_str()), ("clinical_instructor", "Clinical Instructor"));
+    assert_eq!(ci.year_level, None);
+    let mut bad = register_input(&format!("test-{nanos}-bad@nurset.local"), "bad-pass-1234");
+    bad.account_type = Some("admin".into());
+    assert!(auth::register(&request(&pool, None).await, bad).await.is_err(), "unknown role");
+
+    for id in [uid, ci.id] {
+        sqlx::query("DELETE FROM users WHERE id = $1").bind(id).execute(&pool).await.unwrap();
+    }
 }
 
 /// "Keep me signed in" = 30-day session; otherwise 12 hours.
