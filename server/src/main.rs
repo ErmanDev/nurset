@@ -19,6 +19,7 @@ mod files;
 mod migrate;
 mod models;
 mod question_bank;
+mod rate_limit;
 
 #[cfg(test)]
 mod integration_tests;
@@ -28,9 +29,10 @@ mod integration_tests_auth;
 mod integration_tests_ci;
 
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use axum::body::{Body, Bytes};
-use axum::extract::{DefaultBodyLimit, Path, State};
+use axum::extract::{ConnectInfo, DefaultBodyLimit, Path, State};
 use axum::http::{header, HeaderMap, HeaderValue, Method, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -41,6 +43,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 use crate::db::{Db, DEFAULT_DATABASE_URL, SIGNED_OUT};
 use crate::error::{AppError, AppResult};
+use crate::rate_limit::LoginLimiter;
 
 /// Largest request body (uploads are capped lower by each command).
 const MAX_BODY_BYTES: usize = 30 * 1024 * 1024;
@@ -48,6 +51,7 @@ const MAX_BODY_BYTES: usize = 30 * 1024 * 1024;
 #[derive(Clone)]
 struct AppState {
     pool: PgPool,
+    login_limiter: Arc<LoginLimiter>,
 }
 
 #[tokio::main]
@@ -64,7 +68,7 @@ async fn main() {
         // Keep serving: /health reports the problem and requests get a clear error.
         Err(e) => eprintln!("Couldn't run database migrations: {e}"),
     }
-    let state = AppState { pool };
+    let state = AppState { pool, login_limiter: Arc::default() };
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
@@ -89,7 +93,10 @@ async fn main() {
         dispatch::COMMAND_COUNT,
         if ai::GeminiConfig::from_env().is_some() { "on" } else { "off" },
     );
-    axum::serve(listener, app).with_graceful_shutdown(shutdown()).await.expect("server");
+    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
+        .with_graceful_shutdown(shutdown())
+        .await
+        .expect("server");
 }
 
 async fn shutdown() {
@@ -144,7 +151,27 @@ async fn health(State(state): State<AppState>) -> Response {
     (status, Json(json!({ "ok": db_ok, "commands": dispatch::COMMAND_COUNT }))).into_response()
 }
 
-async fn rpc(State(state): State<AppState>, Path(name): Path<String>, headers: HeaderMap, body: Bytes) -> Response {
+/// The caller's IP: the first `X-Forwarded-For` entry (Render's proxy sets it),
+/// else the TCP peer. The header can be forged off Render, which only gets
+/// around the per-IP limit; the per-account limit still applies.
+fn client_ip(headers: &HeaderMap, peer: SocketAddr) -> String {
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.split(',').next())
+        .map(str::trim)
+        .filter(|ip| !ip.is_empty())
+        .map(str::to_string)
+        .unwrap_or_else(|| peer.ip().to_string())
+}
+
+async fn rpc(
+    State(state): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(name): Path<String>,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
     let args: Value = if body.is_empty() {
         Value::Null
     } else {
@@ -157,7 +184,36 @@ async fn rpc(State(state): State<AppState>, Path(name): Path<String>, headers: H
         Ok(db) => db,
         Err(e) => return error_response(e),
     };
+    if name == "sign_in" {
+        return sign_in(&state, &db, &headers, peer, args).await;
+    }
     respond(dispatch::call(&db, &name, args).await)
+}
+
+/// `sign_in` with the login rate limit (HTTP 429 once it's reached).
+async fn sign_in(state: &AppState, db: &Db, headers: &HeaderMap, peer: SocketAddr, args: Value) -> Response {
+    let identifier = args.get("identifier").and_then(Value::as_str).unwrap_or_default().to_string();
+    let attempt = match state.login_limiter.begin(&identifier, &client_ip(headers, peer)) {
+        Ok(attempt) => attempt,
+        Err(wait) => {
+            let mut response = (
+                StatusCode::TOO_MANY_REQUESTS,
+                Json(json!({ "error": rate_limit::too_many_message(wait) })),
+            )
+                .into_response();
+            if let Ok(v) = HeaderValue::from_str(&wait.as_secs().max(1).to_string()) {
+                response.headers_mut().insert(header::RETRY_AFTER, v);
+            }
+            return response;
+        }
+    };
+    let result = dispatch::call(db, "sign_in", args).await;
+    match &result {
+        Ok(_) => state.login_limiter.succeeded(attempt),
+        Err(e) if e.to_string() == commands::auth::BAD_LOGIN => {}
+        Err(_) => state.login_limiter.not_counted(attempt),
+    }
+    respond(result)
 }
 
 async fn upload_document(State(state): State<AppState>, headers: HeaderMap, body: Bytes) -> Response {

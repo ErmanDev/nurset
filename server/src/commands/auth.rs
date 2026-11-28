@@ -20,7 +20,7 @@ const BCRYPT_COST: u32 = 12;
 /// Session length with and without "Keep me signed in".
 const REMEMBER_DAYS: i32 = 30;
 const SHORT_HOURS: i32 = 12;
-const BAD_LOGIN: &str = "Incorrect email, student ID, or password";
+pub const BAD_LOGIN: &str = "Incorrect email, student ID, or password";
 
 // ---------- helpers ----------
 
